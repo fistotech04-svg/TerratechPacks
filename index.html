@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="shortcut icon"
+      href="./assets/Logo/logo-icon.png"
+      type="image/x-icon"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://site-assets.fontawesome.com/releases/v6.4.2/css/all.css"
+    />
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="./Css/nav.css" />
+    <link rel="stylesheet" href="./Css/left_sidebar.css" />
+    <link rel="stylesheet" href="./Css/right_sidebar.css" />
+    <link rel="stylesheet" href="./Css/maincontent.css" />
+    <!-- model-viewer CDN -->
+    <script
+      type="module"
+      src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
+    ></script>
+    <title>TerraTech 3D</title>
+  </head>
+  <body>
+    <div class="main">
+      <nav class="nav">
+        <img
+          src="./assets/Logo/logo.webp"
+          alt="TerraTech_logo"
+          class="nav_logo"
+        />
+        <div class="nav_title">TERRA TECH PACKS</div>
+        <a class="login_btn" href="login.html">Login</a>
+      </nav>
+      <div class="content">
+        <div class="left_side_bar">
+          <p>Select Pattern</p>
+          <div class="pattern_box">
+            <div class="pattern_list">
+              <ul class="accordion">
+                <!-- Item 1 -->
+                <li>
+                  <div class="accordion-header">
+                    <span><i class="fa-solid fa-seedling"></i> Floral</span>
+                    <i class="fa-solid fa-angle-down drop"></i>
+                  </div>
+                  <div class="accordion-content patternContainer">
+                    <!-- Pattern swatches inserted by JS -->
+                  </div>
+                </li>
+
+                <!-- Item 2 -->
+                <li>
+                  <div class="accordion-header">
+                    <span><i class="fa-solid fa-cake-candles"></i> Sweet</span>
+                    <i class="fa-solid fa-angle-down drop"></i>
+                  </div>
+                  <div class="accordion-content patternContainer">
+                    <!-- Pattern swatches inserted by JS -->
+                  </div>
+                </li>
+
+                <!-- Item 3 -->
+                <li>
+                  <div class="accordion-header">
+                    <span><i class="fa-solid fa-shop"></i> Bakery</span>
+                    <i class="fa-solid fa-angle-down drop"></i>
+                  </div>
+                  <div class="accordion-content patternContainer">
+                    <!-- Pattern swatches inserted by JS -->
+                  </div>
+                </li>
+
+                <!-- Item 4 -->
+                <li>
+                  <div class="accordion-header">
+                    <span><i class="fa-solid fa-bowl-food"></i> Biryani</span>
+                    <i class="fa-solid fa-angle-down drop"></i>
+                  </div>
+                  <div class="accordion-content patternContainer">
+                    <!-- Pattern swatches inserted by JS -->
+                  </div>
+                </li>
+
+                <!-- Item 5 -->
+                <li>
+                  <div class="accordion-header">
+                    <span><i class="fa-solid fa-hotel"></i> Hotel</span>
+                    <i class="fa-solid fa-angle-down drop"></i>
+                  </div>
+                  <div class="accordion-content patternContainer">
+                    <!-- Pattern swatches inserted by JS -->
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <p>Upload Logo</p>
+          <div class="upload_box">
+            <label for="logoUpload" class="upload-box" id="dropArea">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <p style="margin-top: 10px">Upload Logo Here</p>
+              <input type="file" id="logoUpload" accept="image/*" />
+            </label>
+            <button class="edit_btn">Edit</button>
+          </div>
+        </div>
+        <div class="main_content">
+          <div class="model">
+            <div
+              style="
+                height: 10%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <h3 id="mainModelTitle">120ml Round Container</h3>
+            </div>
+            <div class="model_view">
+              <model-viewer
+                id="mainViewer"
+                src="/assets/terra_tech_models/logo_120 ml round.glb"
+                alt="120ml Round Container"
+                camera-controls
+                auto-rotate
+                exposure="1"
+                rotation-per-second="90deg"
+                shadow-intensity="0.5"
+                ar
+                interaction-prompt="none"
+                style="
+                  background: linear-gradient(180deg, #fff, #f7f8fa);
+                  width: 100%;
+                  height: 500px;
+                "
+              >
+              </model-viewer>
+            </div>
+          </div>
+
+          <div class="model_file">
+            <div class="parts">
+              <select id="partSelect">
+                <option value="lid">Lid</option>
+                <option value="tub">Tub</option>
+              </select>
+
+              <div id="colorOptions" class="color-options">
+                <!-- Dynamic radio buttons will be inserted here -->
+              </div>
+            </div>
+            <div class="export">
+              <select id="exportFormat">
+                <option value="png">PNG</option>
+                <option value="jpg">JPG</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <button id="exportBtn">Export</button>
+            </div>
+          </div>
+        </div>
+        <div class="Right_side_bar">
+          <p>Select Model</p>
+          <!-- thumbnails -->
+          <div class="thumbs">
+            <div class="thumb-grid" id="thumbGrid">
+              <!-- thumbnails injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="index.js"></script>
+    <script src="model.js"></script>
+  </body>
+</html>

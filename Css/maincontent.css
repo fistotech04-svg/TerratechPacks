@@ -1,0 +1,106 @@
+.model {
+  height: 90%;
+}
+.model_view {
+    /* background-color: red; */
+  height: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto;
+}
+
+.model h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.model_file {
+  height: 10%;
+  outline: 2px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+}
+.parts {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  font-family: Arial, sans-serif;
+}
+
+.parts label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+#partSelect {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.color-options {
+  display: flex;
+  gap: 6px;
+}
+
+.color-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.color-options input[type="radio"] {
+  accent-color: #007bff;
+}
+
+.export {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+/* Dropdown */
+.export select {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.export select:hover {
+  border-color: #fbd238;
+}
+
+/* Button */
+.export button {
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  background: #fbd238;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.export button:hover {
+  background: #b38c01;
+}
+
+.export button:active {
+  transform: scale(0.95);
+}

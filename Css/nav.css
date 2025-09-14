@@ -1,0 +1,38 @@
+.nav {
+  height: 10vh;
+  padding: 0 40px;
+  /* background-color: lightblue; */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  outline: 2px solid black;
+}
+.nav_logo {
+  height: 4vh;
+}
+.nav_title {
+  font-size: 20px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.login_btn {
+  border: none;
+  height: 40px;
+  width: 70px;
+  border-radius: 7px;
+  background-color: #fbd238;
+  cursor: pointer;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  transition: 1s;
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: black;
+}
+.login_btn:hover {
+  transition: 1s;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}

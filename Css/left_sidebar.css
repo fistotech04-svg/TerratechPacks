@@ -1,0 +1,202 @@
+.pattern_box {
+  height: 70%;
+  /* background-color: red; */
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.upload_box {
+  height: 30%;
+}
+
+.left_side_bar p {
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.accordion {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px 0;
+  margin-top: 10px;
+}
+
+/* Main category button */
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.3s;
+  /* border: 1px solid #ccc; */
+}
+
+.accordion-header:hover {
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+}
+
+.accordion-header.active {
+  border: 1px solid #000;
+}
+
+.accordion-header span {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.accordion-header i {
+  font-style: normal;
+  font-size: 18px;
+  width: 30px;
+  color: #323232;
+  /* background-color: red; */
+}
+
+/* Dropdown content */
+/* Accordion content (collapsed by default) */
+.accordion-content {
+  max-height: 0;               /* collapsed */
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  margin-left: 10px;
+  padding: 0 10px;             /* padding only horizontal when collapsed */
+  display: block;              /* keep it block, control via max-height */
+}
+
+/* Active (expanded) */
+.accordion-content.active {
+  max-height: 500px;           /* enough space to show patterns */
+  padding: 10px;               /* restore padding */
+  overflow-y: auto;            /* enable scroll if content too tall */
+}
+
+/* Links inside content */
+.accordion-content a {
+  display: block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: #000;
+  font-size: 14px;
+}
+
+.accordion-content a:hover {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.accordion-content a span {
+  color: #666;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+/* Pattern swatches */
+.accordion-content .pattern-swatch {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  margin: 5px;
+  display: inline-block;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  position: relative;
+  border: 1px solid black;
+}
+
+.accordion-content .pattern-swatch.selected {
+  border: 2px solid #007bff;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.upload-box {
+  border: 2px dashed #000000;
+  border-radius: 12px;
+  padding: 20px 60px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #c6c6c6;
+  transition: background 0.3s, border-color 0.3s;
+  cursor: pointer;
+}
+
+.upload-box.dragover {
+  background: #f9ffe0;
+  border-color: #000000;
+}
+
+.upload-box i {
+  font-size: 30px;
+  color: #000000;
+  margin-bottom: 10px;
+}
+
+.upload-box p {
+  color: #000000;
+  font-size: 14px;
+  margin: 0;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+.edit_btn{
+  border: none;
+  margin-top: 10px;
+  height: 40px;
+  width: 100%;
+  border-radius: 7px;
+  background-color: #fbd238;
+  cursor: pointer;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  transition: 1s;
+  font-size: 15px;
+  font-weight: 500;
+}
