@@ -28,17 +28,19 @@
       type="module"
       src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <title>TerraTech 3D</title>
   </head>
   <body>
-    <div class="main">
+    <div class="main" id="main">
       <nav class="nav">
         <img
           src="./assets/Logo/logo.webp"
           alt="TerraTech_logo"
           class="nav_logo"
         />
-        <div class="nav_title">TERRA TECH PACKS</div>
+        <!-- <div class="nav_title">TERRA TECH PACKS</div> -->
         <a class="login_btn" href="login.html">Login</a>
       </nav>
       <div class="content">
@@ -47,60 +49,7 @@
           <div class="pattern_box">
             <div class="pattern_list">
               <ul class="accordion">
-                <!-- Item 1 -->
-                <li>
-                  <div class="accordion-header">
-                    <span><i class="fa-solid fa-seedling"></i> Floral</span>
-                    <i class="fa-solid fa-angle-down drop"></i>
-                  </div>
-                  <div class="accordion-content patternContainer">
-                    <!-- Pattern swatches inserted by JS -->
-                  </div>
-                </li>
-
-                <!-- Item 2 -->
-                <li>
-                  <div class="accordion-header">
-                    <span><i class="fa-solid fa-cake-candles"></i> Sweet</span>
-                    <i class="fa-solid fa-angle-down drop"></i>
-                  </div>
-                  <div class="accordion-content patternContainer">
-                    <!-- Pattern swatches inserted by JS -->
-                  </div>
-                </li>
-
-                <!-- Item 3 -->
-                <li>
-                  <div class="accordion-header">
-                    <span><i class="fa-solid fa-shop"></i> Bakery</span>
-                    <i class="fa-solid fa-angle-down drop"></i>
-                  </div>
-                  <div class="accordion-content patternContainer">
-                    <!-- Pattern swatches inserted by JS -->
-                  </div>
-                </li>
-
-                <!-- Item 4 -->
-                <li>
-                  <div class="accordion-header">
-                    <span><i class="fa-solid fa-bowl-food"></i> Biryani</span>
-                    <i class="fa-solid fa-angle-down drop"></i>
-                  </div>
-                  <div class="accordion-content patternContainer">
-                    <!-- Pattern swatches inserted by JS -->
-                  </div>
-                </li>
-
-                <!-- Item 5 -->
-                <li>
-                  <div class="accordion-header">
-                    <span><i class="fa-solid fa-hotel"></i> Hotel</span>
-                    <i class="fa-solid fa-angle-down drop"></i>
-                  </div>
-                  <div class="accordion-content patternContainer">
-                    <!-- Pattern swatches inserted by JS -->
-                  </div>
-                </li>
+                <!-- category is injucted from js -->
               </ul>
             </div>
           </div>
@@ -112,6 +61,30 @@
               <input type="file" id="logoUpload" accept="image/*" />
             </label>
             <button class="edit_btn">Edit</button>
+          </div>
+          <!-- Modal -->
+          <div id="editModal" class="modal">
+            <div class="modal-content">
+              <div class="modal_header">
+                <span class="close-button"><i class="fa-solid fa-xmark"></i></span>
+                <h3>Edit Logo</h3>
+              </div>
+              <div class="modal_body">
+                <div id="previewWrapper" style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+                  <!-- Loader -->
+                  <div id="previewLoader" style="display: none; position: absolute; top:50%; left:50%; transform: translate(-50%, -50%); z-index: 10;">
+                    <div class="loader"></div>
+                  </div>
+                  <!-- Fabric canvas for drawing -->
+                  <canvas id="fabricCanvas"></canvas>
+                </div>
+              </div>
+              <div class="modal_footer">
+                <button id="saveLogoBtn" class="save_btn">Save</button>
+                <label for="uploadBtn" class="upload_btn">Upload Logo</label>
+                <input type="file" id="uploadBtn" name="file" hidden>
+              </div>
+            </div>
           </div>
         </div>
         <div class="main_content">
@@ -129,20 +102,17 @@
             <div class="model_view">
               <model-viewer
                 id="mainViewer"
-                src="/assets/terra_tech_models/logo_120 ml round.glb"
+                src="./assets/Model_with_logo/120ml round with logo.glb"
                 alt="120ml Round Container"
                 camera-controls
                 auto-rotate
                 exposure="1"
                 rotation-per-second="90deg"
                 shadow-intensity="0.5"
+                disable-tap
+                disable-pan
                 ar
                 interaction-prompt="none"
-                style="
-                  background: linear-gradient(180deg, #fff, #f7f8fa);
-                  width: 100%;
-                  height: 500px;
-                "
               >
               </model-viewer>
             </div>
@@ -151,13 +121,17 @@
           <div class="model_file">
             <div class="parts">
               <select id="partSelect">
-                <option value="lid">Lid</option>
+                <option selected value="lid">Lid</option>
                 <option value="tub">Tub</option>
               </select>
 
               <div id="colorOptions" class="color-options">
                 <!-- Dynamic radio buttons will be inserted here -->
               </div>
+            </div>
+            <div class="colour_picker">
+              <label for="bgColorPicker">Background:</label>
+              <input type="color" id="bgColorPicker">
             </div>
             <div class="export">
               <select id="exportFormat">
@@ -179,9 +153,12 @@
           </div>
         </div>
       </div>
+      <!-- Preloader Spinner -->
+    <div id="preloader">
+      <div class="spinner"></div>
+    </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="index.js"></script>
     <script src="model.js"></script>
   </body>
 </html>

@@ -1,5 +1,6 @@
 .model {
   height: 90%;
+  /* background-color: #e1efb5; */
 }
 .model_view {
     /* background-color: red; */
@@ -8,6 +9,13 @@
   flex-direction: column;
   align-items: center;
   margin: auto;
+  /* border-bottom: 2px solid black; */
+}
+
+#mainViewer{
+  /* background: linear-gradient(180deg, #fff, #f7f8fa); */
+  width: 100%;
+  height: 100%;
 }
 
 .model h3 {
@@ -28,7 +36,6 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: #fff;
   font-family: Arial, sans-serif;
 }
 
@@ -103,4 +110,54 @@
 
 .export button:active {
   transform: scale(0.95);
+}
+
+.category-section {
+  margin-bottom: 20px;
+}
+
+.category-section h4 {
+  margin: 10px 0;
+  color: #333;
+}
+
+.category-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.colour_picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.colour_picker label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.colour_picker input[type="color"] {
+  -webkit-appearance: none;
+  /* border: none; */
+  width: 50px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  background: none;
+}
+
+/* Removes default styling in browsers */
+.colour_picker input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 8px;
+}
+.colour_picker input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
 }

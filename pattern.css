@@ -23,7 +23,7 @@ button {
   padding: 10px;
   border-radius: 5px;
   border: 1px solid #ccc;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   box-sizing: border-box;
   font-size: 1rem;
 }
@@ -42,25 +42,32 @@ button:hover {
   margin-top: 10px;
   font-weight: bold;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-table,
-th,
-td {
+.table-container {
+  max-height: 350px;   /* adjust height as needed */
+  overflow-y: auto;
   border: 1px solid #ccc;
+  scrollbar-width: none;
 }
-th,
-td {
-  padding: 10px;
-  text-align: left;
+
+.pattern-table {
+  border-collapse: collapse;
+  width: 100%;
 }
-img {
-  max-width: 100px;
-  max-height: 80px;
+
+.pattern-table th,
+.pattern-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
 }
+
+.pattern-table th {
+  position: sticky;
+  top: 0;
+  background: #f8f8f8;  /* keep visible on scroll */
+  z-index: 2;           /* stays above body rows */
+}
+
 .trash {
   cursor: pointer;
   color: red;

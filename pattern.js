@@ -1,14 +1,29 @@
-const API_FETCH_CATEGORIES = "https://terratechpacks.com/App_3D/category_fetch.php";
-const API_UPLOAD_PATTERN   = "https://terratechpacks.com/App_3D/pattern_add.php";
-const API_UPLOAD_IMAGE     = "https://terratechpacks.com/App_3D/upload_to_assets.php";
-const API_FETCH_PATTERNS = "https://terratechpacks.com/App_3D/pattern_fetch.php";
-const API_DELETE_PATTERNS = "https://terratechpacks.com/App_3D/pattern_remove.php";
+const API_FETCH_CATEGORIES =
+  "https://terratechpacks.com/App_3D/category_fetch.php";
+const API_UPLOAD_PATTERN = "https://terratechpacks.com/App_3D/pattern_add.php";
+const API_UPLOAD_IMAGE =
+  "https://terratechpacks.com/App_3D/upload_to_assets.php";
+const API_FETCH_PATTERNS =
+  "https://terratechpacks.com/App_3D/pattern_fetch.php";
+const API_DELETE_PATTERNS =
+  "https://terratechpacks.com/App_3D/pattern_remove.php";
 
 function initPatternPage() {
   fetchPatternCategories();
-  fetchPatterns(); // ✅ Fetch and render patterns in table
+  fetchPatterns();
+
   const uploadBtn = document.getElementById("upload-btn");
-  if (uploadBtn) uploadBtn.addEventListener("click", uploadPatternHandler);
+  if (uploadBtn) {
+    uploadBtn.addEventListener("click", uploadPatternHandler);
+  }
+
+  const categorySelect = document.getElementById("category-select");
+  if (categorySelect) {
+    categorySelect.addEventListener("change", () => {
+      const selectedCategory = categorySelect.value;
+      fetchPatterns(selectedCategory);
+    });
+  }
 }
 
 async function fetchPatternCategories() {
@@ -20,40 +35,46 @@ async function fetchPatternCategories() {
   try {
     const res = await fetch(API_FETCH_CATEGORIES, { cache: "no-store" });
     const data = await res.json();
-
-    console.log("Fetch pattern category",data);
+    console.log("Fetch pattern category", data);
 
     if (data.status === "success" && Array.isArray(data.data)) {
       updateCategoriesUI(data.data, categorySelect);
     } else {
-      categorySelect.innerHTML = '<option value="">No categories available</option>';
+      categorySelect.innerHTML =
+        '<option value="">No categories available</option>';
     }
   } catch (err) {
     console.error("Error fetching categories:", err);
-    categorySelect.innerHTML = '<option value="">Error loading categories</option>';
+    categorySelect.innerHTML =
+      '<option value="">Error loading categories</option>';
   }
 }
 
 function updateCategoriesUI(categories, categorySelect) {
-  categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
-  categories.forEach(cat => {
+  categorySelect.innerHTML = '<option value="">-- All Categories --</option>';
+  categories.forEach((cat) => {
     const option = document.createElement("option");
-    // Use category name
     option.value = cat.category;
     option.textContent = cat.category;
     categorySelect.appendChild(option);
   });
 }
 
-async function fetchPatterns() {
+async function fetchPatterns(categoryName = "") {
   const tableBody = document.getElementById("pattern-table-body");
   if (!tableBody) return;
 
   tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
 
   try {
-    const res = await fetch(API_FETCH_PATTERNS, { cache: "no-store" });
+    const res = await fetch(API_FETCH_PATTERNS, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category_name: categoryName }),
+    });
+
     const data = await res.json();
+    console.log("Fetch patterns response:", data);
 
     if (data.status === "success" && Array.isArray(data.data)) {
       renderPatternTable(data.data, tableBody);
@@ -77,23 +98,29 @@ function renderPatternTable(patterns, tableBody) {
   patterns.forEach((pattern, index) => {
     const row = document.createElement("tr");
 
-    const imageUrl = `https://terratechpacks.com/App_3D/Patterns/${pattern.pattern_url}`;
+    const fileName = pattern.pattern_url || "";
+    const imageUrl = `https://terratechpacks.com/App_3D/Patterns/${encodeURIComponent(
+      fileName
+    )}`;
+
+    console.log("pattern",pattern.pattern_url);
+
     const escapedCategory = escapeHtml(pattern.category_name || "");
-    const escapedUrl = escapeHtml(pattern.pattern_url || "");
 
     row.innerHTML = `
       <td>${index + 1}</td>
       <td>${escapedCategory}</td>
-      <td><img src="${imageUrl}" alt="Pattern" style="max-width: 100px;" /></td>
-      <td><i class="fa-solid fa-trash trash" data-id="${pattern.id}" style="cursor:pointer;color:red;"></i></td>
-      
+      <td><img src="${imageUrl}" alt="Pattern" style="max-width: 100px;" onerror="this.onerror=null;this.src='';"/></td>
+      <td>
+        <i class="fa-solid fa-trash trash" data-id="${pattern.id}" 
+           style="cursor:pointer;color:red;"></i>
+      </td>
     `;
 
     tableBody.appendChild(row);
   });
 
-  // Attach delete handlers (optional)
-  document.querySelectorAll(".delete-btn").forEach(btn => {
+  document.querySelectorAll(".trash").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       if (confirm("Are you sure you want to delete this pattern?")) {
@@ -103,6 +130,24 @@ function renderPatternTable(patterns, tableBody) {
   });
 }
 
+async function uploadToAssets(file, filename) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("filename", filename);
+
+  try {
+    const response = await fetch(API_UPLOAD_IMAGE, {
+      method: "POST",
+      body: formData,
+    });
+    const json = await response.json();
+    console.log("Upload response:", json);
+    return json;
+  } catch (error) {
+    console.error("Upload failed:", error);
+    return null;
+  }
+}
 
 async function uploadPatternHandler() {
   const categorySelect = document.getElementById("category-select");
@@ -121,66 +166,89 @@ async function uploadPatternHandler() {
     return;
   }
 
+  const ext = file.name.split(".").pop().toLowerCase();
+  const allowed = ["jpg", "jpeg", "png", "gif", "webp"];
+  if (!allowed.includes(ext)) {
+    alert("Invalid file type. Allowed: " + allowed.join(", "));
+    return;
+  }
+
+  const safeCategory = categoryName.replace(/[^a-z0-9_-]/gi, "_");
+  const filename = `${safeCategory}_${Date.now()}.${ext}`;
+
+  
+
+  const uploadRes = await uploadToAssets(file, filename);
+  if (!uploadRes || !uploadRes.success) {
+    alert(
+      "Failed to upload file: " +
+        (uploadRes && uploadRes.message ? uploadRes.message : "Unknown error")
+    );
+    return;
+  }
+
+console.log(categoryName,filename)
+
+  const res = await fetch(API_UPLOAD_PATTERN, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      category_name: categoryName,
+      pattern_url: filename,
+    }),
+  });
+  const result = await res.json();
+  console.log("Pattern add response:", result);
+
+  if (result.status === "success") {
+    alert("Pattern uploaded successfully");
+    fileInput.value = "";
+    categorySelect.value = "";
+    fetchPatterns();
+    const previewImage = document.getElementById("preview-image");
+    if (previewImage) {
+      previewImage.src = "";
+      previewImage.style.display = "none";
+    }
+  } else {
+    alert("Error: " + (result.message || "Upload failed"));
+  }
+}
+
+async function deletePattern(id) {
   try {
-    const ext = file.name.split('.').pop().toLowerCase();
-    const allowed = ["jpg", "jpeg", "png", "gif"];
-    if (!allowed.includes(ext)) {
-      alert("Invalid file type");
-      return;
-    }
-
-    const filename = `${categoryName}_${Date.now()}.${ext}`;
-
-    const uploadRes = await uploadToAssets(file, filename);
-    if (!uploadRes || !uploadRes.success) {
-      alert("Failed to upload file.");
-      return;
-    }
-
-    const res = await fetch(API_UPLOAD_PATTERN, {
+    const res = await fetch(API_DELETE_PATTERNS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        category_name: categoryName,
-        pattern_url: filename   // ⬅️ Only the filename sent to backend
-      })
+      body: JSON.stringify({ id }),
     });
 
-    const result = await res.json();
-    if (result.status === "success") {
-  alert("Pattern uploaded successfully");
-  fileInput.value = "";
-  categorySelect.value = "";
-  fetchPatterns();
-
-  // ✅ Clear preview image
-  const previewImage = document.getElementById("preview-image");
-  if (previewImage) {
-    previewImage.src = "";
-    previewImage.style.display = "none";
-  }
-}
- else {
-      alert("Error: " + (result.message || "Upload failed"));
+    const data = await res.json();
+    if (data.status === "success") {
+      alert("Pattern deleted successfully.");
+      fetchPatterns();
+    } else {
+      alert("Error: " + (data.message || "Unable to delete pattern."));
     }
   } catch (err) {
-    console.error("Upload error:", err);
-    alert("Unexpected error during upload");
+    console.error("Delete error:", err);
+    alert("Unexpected error occurred.");
   }
 }
 
-
-async function uploadToAssets(file, filename) {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("filename", filename);
-
-  const response = await fetch(API_UPLOAD_IMAGE, {
-    method: "POST",
-    body: formData
+function escapeHtml(unsafe) {
+  return String(unsafe).replace(/[&<>"'`=\/]/g, function (s) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+      "/": "&#x2F;",
+      "`": "&#96;",
+      "=": "&#61;",
+    }[s];
   });
-
-  return await response.json();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -191,54 +259,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const file = this.files[0];
     if (!file) {
       previewImg.style.display = "none";
+      previewImg.src = "";
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      previewImg.src = e.target.result;
-      previewImg.style.display = "block";
-    };
-    reader.readAsDataURL(file);
-  });
-
-  initPatternPage(); // Make sure to call your init here
-});
-
-
-async function deletePattern(id) {
-  try {
-    const res = await fetch(API_DELETE_PATTERNS, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id })
-    });
-
-    const data = await res.json();
-    if (data.status === "success") {
-      alert("Pattern deleted successfully.");
-      fetchPatterns(); // Refresh table
-    } else {
-      alert("Error: " + (data.message || "Unable to delete pattern."));
+    if (previewImg.dataset.url) {
+      URL.revokeObjectURL(previewImg.dataset.url);
     }
-  } catch (err) {
-    console.error("Delete error:", err);
-    alert("Unexpected error occurred.");
-  }
-}
 
-
-function escapeHtml(unsafe) {
-  return String(unsafe).replace(/[&<>"'`=\/]/g, function (s) {
-    return {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '/': '&#x2F;',
-      '`': '&#96;',
-      '=': '&#61;'
-    }[s];
+    const objectUrl = URL.createObjectURL(file);
+    previewImg.src = objectUrl;
+    previewImg.dataset.url = objectUrl;
+    previewImg.style.display = "block";
   });
-}
+
+  initPatternPage();
+});
