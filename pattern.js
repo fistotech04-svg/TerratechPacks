@@ -110,7 +110,7 @@ function renderPatternTable(patterns, tableBody) {
     row.innerHTML = `
       <td>${index + 1}</td>
       <td>${escapedCategory}</td>
-      <td><img src="${imageUrl}" alt="Pattern" style="max-width: 100px;" onerror="this.onerror=null;this.src='';"/></td>
+      <td><img src="${imageUrl}" class="patternimg" alt="Pattern" style="max-width: 100px;" onerror="this.onerror=null;this.src='';"/></td>
       <td>
         <i class="fa-solid fa-trash trash" data-id="${pattern.id}" 
            style="cursor:pointer;color:red;"></i>

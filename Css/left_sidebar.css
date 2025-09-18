@@ -187,7 +187,7 @@
 }
 .modal_body{
   height: 80%;
-  overflow: hidden;
+  /* overflow: hidden; */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,6 +202,10 @@
   object-fit: contain;
   display: block;
 } */
+ #fabricCanvas{
+  height: 100%;
+  width: 100%;
+ }
  #baseImage {
   position: relative;
   max-width: 100%;

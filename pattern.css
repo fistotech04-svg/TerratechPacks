@@ -68,6 +68,10 @@ button:hover {
   z-index: 2;           /* stays above body rows */
 }
 
+.patternimg{
+  border: 1px solid black;
+}
+
 .trash {
   cursor: pointer;
   color: red;

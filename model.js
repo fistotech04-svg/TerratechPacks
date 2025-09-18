@@ -110,6 +110,25 @@ const MODEL_CATEGORIES = {
   ],
 };
 
+const MODEL_CATEGORIES_WITHOUT_LOGO = {
+   Round: [
+    { name: "120ml Round Container", path: "./assets/Model_without_logo/120ml round without logo.glb" },
+    { name: "500ml Round Container", path: "./assets/Model_without_logo/500ml Round  without logo.glb" },
+  ],
+  Biryani: [
+    { name: "500ml Rectangular Container", path: "./assets/Model_without_logo/500ml Rect without logo.glb" },
+  ],
+  Square: [
+    { name: "500gms/450ml Container", path: "./assets/Model_without_logo/450ml cont without logo.glb" },
+  ],
+  "Sweet Boxes": [
+    { name: "250gms Sweet Box", path: "./assets/Model_without_logo/250gms SB without logo.glb" },
+  ],
+  "TE Sweet Boxes": [
+    { name: "250gms Sweet BoxTE", path: "./assets/Model_without_logo/TE 250 sb without logo.glb" },
+  ],
+}
+
 const PATTERN_MATERIAL_NAME = "Bottom";
 const LOGO_MATERIAL_NAME = "Logo";
 
@@ -122,6 +141,7 @@ const state = {
   logoDataUrl: null,
   patternCycleTimer: null,
   selectedColors: { lid: "white", tub: "white" }, // track last color
+  isWithoutLogoModel: false,
 };
 
 /********** ELEMENTS **********/
@@ -215,6 +235,10 @@ function selectModel(index) {
   mainModelTitle.textContent = name;
 
   markSelectedThumbnail(index);
+
+  state.isWithoutLogoModel = Object.values(MODEL_CATEGORIES_WITHOUT_LOGO)
+    .flat()
+    .some(m => m.path === path);
 
   mainViewer.addEventListener("load", () => {
   // Apply pattern if any
@@ -329,9 +353,20 @@ async function initCategoryAccordion() {
               sw.style.backgroundImage = `url('${patternUrl}')`;
               sw.title = `${p.category_name} - ${p.id}`;
               sw.addEventListener("click", () => {
-                stopPatternCycle();
-                applyPatternToAll(p.pattern_url);
-              });
+              stopPatternCycle();
+
+              if (state.isWithoutLogoModel) {
+                const proceed = confirm("You have the model without logo selected. Selecting a pattern will remove your custom logo. Do you want to continue?");
+                if (!proceed) return; // Cancel pattern application
+              }
+
+              applyPatternToAll(p.pattern_url);
+
+              if (state.isWithoutLogoModel) {
+                state.logoDataUrl = null;
+                // Optionally reset logo textures in viewers here if needed
+              }
+            });
               content.appendChild(sw);
             });
 
@@ -398,7 +433,7 @@ exportBtn.addEventListener("click", async () => {
 
 
 /********** PATTERN CYCLE **********/
-function startPatternCycle(patternUrls = [], interval = 4000) {
+function startPatternCycle(patternUrls = [], interval = 2000) {
   stopPatternCycle();  // Stop any ongoing cycle first
 
   if (!patternUrls.length) {
@@ -506,12 +541,11 @@ async function tryApplyMaterialTexture(viewer, materialName, textureUrl) {
   const tex = await viewer.createTexture(encodeURI(textureUrl));
   mat.pbrMetallicRoughness.baseColorTexture.setTexture(tex);
 
-  // Apply transform via KHR_texture_transform extension (if available)
   try {
     if (tex.texture) {
       tex.texture.transform = {
-        offset: [0.25, 0.25], // center the image
-        scale: [0.5, 0.5],    // shrink to 50%
+        offset: [0, 0], // top-left alignment
+        scale: [1, 1],  // cover entire material once
         rotation: 0
       };
     }
@@ -525,6 +559,7 @@ async function tryApplyMaterialTexture(viewer, materialName, textureUrl) {
 
   mat.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
 }
+
 
 
 
@@ -550,10 +585,12 @@ if (logoInput) {
 }
 
 /********** BACKGROUND COLOR PICKER **********/
-const bgColorInput = document.getElementById("bgColorPicker");
+// Get DOM elements
 const mainbg = document.getElementById("main");
 const modalContent = document.querySelector(".modal-content");
+const pickrContainer = document.getElementById("bgColorPicker");
 
+// Brightness function (0 = black, 255 = white)
 function getBrightness(hex) {
   const r = parseInt(hex.substr(1, 2), 16);
   const g = parseInt(hex.substr(3, 2), 16);
@@ -561,30 +598,63 @@ function getBrightness(hex) {
   return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
-if (bgColorInput && mainbg && modalContent) {
-  // Restore saved color on load
-  const savedBg = localStorage.getItem("bgColor");
-  if (savedBg) {
-    mainbg.style.backgroundColor = savedBg;
-    modalContent.style.backgroundColor = savedBg; // ✅ Apply to modal
-    bgColorInput.value = savedBg;
-
-    const brightness = getBrightness(savedBg);
-    bgColorInput.style.borderColor = brightness < 128 ? "white" : "black";
-  }
-
-  // Update background live on color change
-  bgColorInput.addEventListener("input", (e) => {
-    const color = e.target.value;
-    mainbg.style.backgroundColor = color;
-    modalContent.style.backgroundColor = color; // ✅ Apply to modal
-
-    const brightness = getBrightness(color);
-    bgColorInput.style.borderColor = brightness < 128 ? "white" : "black";
-
-    localStorage.setItem("bgColor", color);
-  });
+// Apply color to backgrounds and save
+function applyColor(colorStr) {
+  mainbg.style.backgroundColor = colorStr;
+  modalContent.style.backgroundColor = colorStr;
+  localStorage.setItem("bgColor", colorStr);
 }
+
+// Update border color of the Pickr preview button based on brightness
+function updatePickrBorderColor(hexColor) {
+  const brightness = getBrightness(hexColor);
+  const previewButton = document.querySelector('.pickr .pcr-button');
+
+  if (previewButton) {
+    previewButton.style.border = `2px solid ${brightness < 128 ? 'white' : 'black'}`;
+  }
+}
+
+// Initialize Pickr
+const pickr = Pickr.create({
+  el: '#bgColorPicker',
+  theme: 'nano',
+  default: '#ffffff',
+  components: {
+    preview: true,
+    opacity: true,
+    hue: true,
+    interaction: {
+      input: true,
+      save: true
+    }
+  }
+});
+
+// When Pickr is ready
+pickr.on('init', () => {
+  const savedColor = localStorage.getItem("bgColor") || "#ffffff";
+  applyColor(savedColor);
+  pickr.setColor(savedColor);
+  updatePickrBorderColor(savedColor);
+});
+
+// On color change (live)
+pickr.on('change', (color) => {
+  const rgbaColor = color.toRGBA().toString();
+  const hexColor = color.toHEXA().toString();
+
+  applyColor(rgbaColor);
+  updatePickrBorderColor(hexColor);
+});
+
+// Optional: Hide picker when "Save" is clicked
+pickr.on('save', () => {
+  pickr.hide();
+});
+
+
+
 
 function preloadImages(urls = []) {
   urls.forEach(url => {
@@ -592,8 +662,6 @@ function preloadImages(urls = []) {
     img.src = url + "?preload=" + Date.now(); // force preload with unique param
   });
 }
-
-
 
 // JavaScript
 let canvas = null;
@@ -606,12 +674,16 @@ const closeModal = document.querySelector(".close-button");
 const previewLoader = document.getElementById("previewLoader");
 const previewWrapper = document.getElementById("previewWrapper");
 const uploadInput = document.getElementById("uploadBtn");
+const saveLogoBtn = document.getElementById("saveLogoBtn");
 
-// const state = {
-//   patternCycleTimer: null,  // example flag, replace as needed
-//   patternUrl: '',           // base image URL, set dynamically
-//   logoDataUrl: '',          // uploaded logo data URL
-// };
+// Prevent modal from closing when clicking outside the modal-content
+modal.addEventListener('click', (event) => {
+  // If the clicked target is the modal background (not modal-content), do nothing
+  if (event.target === modal) {
+    // Optional: show a warning or just ignore the click
+    event.stopPropagation(); // Just ignore it
+  }
+});
 
 // Helper: get bounding rect of base image on canvas (in canvas coords)
 function getBaseImageBounds() {
@@ -632,19 +704,30 @@ function getBaseImageBounds() {
   };
 }
 
-
 const fabricCanvasElem = document.getElementById('fabricCanvas');
 
 // Resize canvas to fit wrapper size
 function resizeCanvas() {
-  fabricCanvasElem.width = previewWrapper.clientWidth;
-  fabricCanvasElem.height = previewWrapper.clientHeight;
+  const container = document.getElementById("model_body"); // your target element
+
+  if (!container) {
+    console.warn("model_body not found!");
+    return;
+  }
+
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  fabricCanvasElem.width = width;
+  fabricCanvasElem.height = height;
+
   if (canvas) {
-    canvas.setWidth(previewWrapper.clientWidth);
-    canvas.setHeight(previewWrapper.clientHeight);
+    canvas.setWidth(width);
+    canvas.setHeight(height);
     canvas.renderAll();
   }
 }
+
 
 // Initialize Fabric canvas and load base image (pattern)
 function initFabricCanvas() {
@@ -663,32 +746,27 @@ function initFabricCanvas() {
     previewLoader.style.display = "block"; // show loader before base image loads
 
     fabric.Image.fromURL(state.patternUrl + "?t=" + Date.now(), (img) => {
-      baseImageObj = img;
+  baseImageObj = img;
 
-      // Scale base image to fit canvas while maintaining aspect ratio
-      const canvasRatio = canvas.width / canvas.height;
-      const imgRatio = img.width / img.height;
+  // Scale image to exactly fit canvas width and height (may stretch)
+  img.set({
+    scaleX: canvas.width / img.width,
+    scaleY: canvas.height / img.height,
+    selectable: false,
+    evented: false,
+    left: canvas.width / 2,
+    top: canvas.height / 2,
+    originX: 'center',
+    originY: 'center',
+  });
 
-      if (imgRatio > canvasRatio) {
-        img.scaleToWidth(canvas.width);
-      } else {
-        img.scaleToHeight(canvas.height);
-      }
+  canvas.setBackgroundImage(img, () => {
+    canvas.renderAll();
+    previewLoader.style.display = "none";
+  });
+}, { crossOrigin: "anonymous" });
 
-      img.set({
-        selectable: false,
-        evented: false,
-        left: canvas.width / 2,
-        top: canvas.height / 2,
-        originX: 'center',
-        originY: 'center',
-      });
 
-      canvas.setBackgroundImage(img, () => {
-        canvas.renderAll();
-        previewLoader.style.display = "none";  // hide loader after base image loaded
-      });
-    });
   } else {
     previewLoader.style.display = "none"; // no base image, hide loader immediately
   }
@@ -704,8 +782,7 @@ function addLogoToCanvas(dataUrl) {
   fabric.Image.fromURL(dataUrl, (img) => {
     logoImageObj = img;
 
-    // Scale logo uniformly to fit within 100x100 box (keep aspect ratio)
-    const maxDisplaySize = 300;
+    const maxDisplaySize = Math.min(canvas.getWidth(), canvas.getHeight()) / 2;
     const scaleRatio = maxDisplaySize / Math.max(img.width, img.height);
     img.scale(scaleRatio);
 
@@ -713,7 +790,7 @@ function addLogoToCanvas(dataUrl) {
       originX: 'left',
       originY: 'top',
       cornerStyle: 'circle',
-      cornerColor: 'blue',
+      cornerColor: 'yellow',
       transparentCorners: false,
       lockScalingFlip: true,
       selectable: true,
@@ -722,56 +799,84 @@ function addLogoToCanvas(dataUrl) {
       minScaleLimit: 0.1,
     });
 
-    // Place logo at top-left of base image (with margin)
-    const baseBounds = getBaseImageBounds();
-    if (baseBounds) {
-      img.set({
-        left: baseBounds.left + 5,
-        top: baseBounds.top + 5,
-      });
-    } else {
-      img.set({
-        left: 10,
-        top: 10,
-      });
-    }
-
-    // Keep logo inside base image when moving
-    img.on('moving', () => {
-      const baseBounds = getBaseImageBounds();
-      const bound = img.getBoundingRect();
-
-      if (baseBounds) {
-        if (bound.left < baseBounds.left) img.left += (baseBounds.left - bound.left);
-        if (bound.top < baseBounds.top) img.top += (baseBounds.top - bound.top);
-        if (bound.left + bound.width > baseBounds.right) img.left -= (bound.left + bound.width - baseBounds.right);
-        if (bound.top + bound.height > baseBounds.bottom) img.top -= (bound.top + bound.height - baseBounds.bottom);
-      }
-    });
-
-    // Keep logo inside base image when scaling
-    img.on('scaling', () => {
-      const baseBounds = getBaseImageBounds();
-      const bound = img.getBoundingRect();
-
-      if (baseBounds) {
-        // Limit scale so logo doesn't go outside image
-        const scaleLimitX = (baseBounds.right - img.left) / img.width;
-        const scaleLimitY = (baseBounds.bottom - img.top) / img.height;
-
-        const maxAllowedScale = Math.min(scaleLimitX, scaleLimitY);
-        if (img.scaleX > maxAllowedScale) {
-          img.scaleX = img.scaleY = maxAllowedScale;
-        }
-      }
+    // Initial logo position
+    img.set({
+      left: 10,
+      top: 10,
     });
 
     canvas.add(img);
     canvas.setActiveObject(img);
     canvas.renderAll();
-  });
+
+    // Enforce boundaries when modified
+    img.on('modified', () => {
+      const bound = img.getBoundingRect();
+      const canvasWidth = canvas.getWidth();
+      const canvasHeight = canvas.getHeight();
+
+      let newLeft = img.left;
+      let newTop = img.top;
+
+      const padding = 1;
+      let moved = false;
+
+      // Check horizontal bounds
+      if (bound.left < padding) {
+        newLeft += padding - bound.left;
+        moved = true;
+      } else if (bound.left + bound.width > canvasWidth - padding) {
+        newLeft -= (bound.left + bound.width) - canvasWidth + padding;
+        moved = true;
+      }
+
+      // Check vertical bounds
+      if (bound.top < padding) {
+        newTop += padding - bound.top;
+        moved = true;
+      } else if (bound.top + bound.height > canvasHeight - padding) {
+        newTop -= (bound.top + bound.height) - canvasHeight + padding;
+        moved = true;
+      }
+
+      if (moved) {
+        const startLeft = img.left;
+        const startTop = img.top;
+
+        fabric.util.animate({
+          startValue: 0,
+          endValue: 1,
+          duration: 400,
+          easing: fabric.util.ease.easeOutCubic,
+          onChange: (t) => {
+            img.set({
+              left: startLeft + (newLeft - startLeft) * t,
+              top: startTop + (newTop - startTop) * t,
+            });
+            canvas.renderAll();
+          },
+          onComplete: () => {
+            img.set({ left: newLeft, top: newTop });
+            canvas.renderAll();
+          }
+        });
+      }
+    });
+  }, { crossOrigin: "anonymous" });
 }
 
+function getModelWithoutLogoPath(selectedIndex) {
+  // Find model name from current thumbnails by selectedIndex
+  const selectedModelName = state.thumbnails[selectedIndex]?.name;
+  if (!selectedModelName) return null;
+  
+  // Search model path in MODEL_CATEGORIES_WITHOUT_LOGO for matching name
+  for (const models of Object.values(MODEL_CATEGORIES_WITHOUT_LOGO)) {
+    const found = models.find(m => m.name === selectedModelName);
+    if (found) return found.path;
+  }
+  return null; // fallback if no match found
+}
 
 
 // Open modal and initialize everything
@@ -779,6 +884,29 @@ editBtn.addEventListener('click', () => {
   if (state.patternCycleTimer) {
     alert("Please select the pattern before editing.");
     return;
+  }
+
+  state.logoDataUrl = null;
+
+  // Get "without logo" model path based on current selection
+  const withoutLogoPath = getModelWithoutLogoPath(state.selectedIndex);
+  if (withoutLogoPath && mainViewer) {
+    const encoded = encodeURI(withoutLogoPath) + (withoutLogoPath.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+    // Listen for model load event before applying colors
+    mainViewer.addEventListener(
+      "load",
+      () => {
+        // Apply lid and tub colors after model is fully loaded
+        Object.entries(state.selectedColors).forEach(([part, color]) => {
+          updateMaterialColor(part, color, { skipWait: true });
+        });
+      },
+      { once: true }
+    );
+
+    mainViewer.src = encoded;
+    state.isWithoutLogoModel = true;  // set true when loading without logo model
   }
 
   if (modal) modal.classList.add("show");
@@ -793,12 +921,21 @@ editBtn.addEventListener('click', () => {
   }
 });
 
+
+
 // Upload logo and add to canvas
 uploadInput.addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
-  previewLoader.style.display = "block"; // optional: can show loader for logo if you want
+  // 🔒 Check if file is PNG
+  if (file.type !== 'image/png') {
+    alert("Please upload a PNG image only.");
+    uploadInput.value = ''; // Clear input
+    return;
+  }
+
+  previewLoader.style.display = "block";
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -807,124 +944,93 @@ uploadInput.addEventListener('change', (event) => {
 
     addLogoToCanvas(dataUrl);
 
-    previewLoader.style.display = "none"; // hide loader after logo added (optional)
+    previewLoader.style.display = "none";
   };
   reader.readAsDataURL(file);
 });
+
 
 // Optional: close modal logic
 if (closeModal) {
   closeModal.addEventListener('click', () => {
     if (modal) modal.classList.remove("show");
+
+    // Restore mainViewer to model WITH logo
+    const currentIndex = state.selectedIndex;
+    const originalModel = state.thumbnails[currentIndex];
+    if (originalModel && mainViewer) {
+      const pathWithLogo = originalModel.path;
+      const encoded = encodeURI(pathWithLogo) + (pathWithLogo.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+      // Apply textures and colors AFTER model loads
+      mainViewer.addEventListener('load', async () => {
+        if (state.patternUrl) {
+          await tryApplyMaterialTexture(mainViewer, PATTERN_MATERIAL_NAME, state.patternUrl);
+        }
+        if (state.logoDataUrl) {
+          await tryApplyMaterialTexture(mainViewer, LOGO_MATERIAL_NAME, state.logoDataUrl);
+        }
+        Object.entries(state.selectedColors).forEach(([part, color]) => {
+          updateMaterialColor(part, color, { skipWait: true });
+        });
+      }, { once: true });
+
+      mainViewer.src = encoded;
+    }
+
     if (canvas) {
+      // Remove logo if present
+      if (logoImageObj) {
+        canvas.remove(logoImageObj);
+        logoImageObj = null;
+      }
       canvas.dispose();
       canvas = null;
       baseImageObj = null;
-      logoImageObj = null;
     }
+
+    // Clear state
+    state.logoDataUrl = null;
+
+    // Optionally clear file input
+    uploadInput.value = '';
   });
 }
+
+
 
 // Resize canvas on window resize
 window.addEventListener('resize', () => {
   resizeCanvas();
 });
 
-
-
-
-//   saveLogoBtn.addEventListener("click", async () => {
-//   if (!state.patternUrl && !state.logoDataUrl) {
-//     alert("No pattern or logo to apply.");
-//     return;
-//   }
-
-//   const baseImage = document.getElementById("baseImage");
-//   const logoOverlay = document.getElementById("logoOverlay");
-//   const wrapper = document.getElementById("previewWrapper");
-
-//   const canvas = document.createElement("canvas");
-//   const ctx = canvas.getContext("2d");
-
-//   const w = baseImage.naturalWidth || baseImage.width;
-//   const h = baseImage.naturalHeight || baseImage.height;
-
-//   canvas.width = w;
-//   canvas.height = h;
-
-//   // Step 1: Draw base pattern
-//   if (state.patternUrl) {
-//     await new Promise((resolve, reject) => {
-//       const img = new Image();
-//       img.crossOrigin = "anonymous";
-//       img.src = state.patternUrl + "?t=" + Date.now();
-//       img.onload = () => {
-//         ctx.drawImage(img, 0, 0, w, h);
-//         resolve();
-//       };
-//       img.onerror = reject;
-//     });
-//   }
-
-//   // Step 2: Draw logo overlay
-//   if (state.logoDataUrl && logoOverlay.style.display !== "none") {
-//     await new Promise((resolve, reject) => {
-//       const img2 = new Image();
-//       img2.crossOrigin = "anonymous";
-//       img2.src = state.logoDataUrl;
-//       img2.onload = () => {
-//         const overlayRect = logoOverlay.getBoundingClientRect();
-//         const wrapperRect = wrapper.getBoundingClientRect();
-
-//         const relX = overlayRect.left - wrapperRect.left;
-//         const relY = overlayRect.top - wrapperRect.top;
-
-//         const scaleX = w / wrapperRect.width;
-//         const scaleY = h / wrapperRect.height;
-
-//         ctx.drawImage(
-//           img2,
-//           relX * scaleX,
-//           relY * scaleY,
-//           overlayRect.width * scaleX,
-//           overlayRect.height * scaleY
-//         );
-//         resolve();
-//       };
-//       img2.onerror = reject;
-//     });
-//   }
-
-//   // Step 3: Apply combined texture to Bottom material (NOT Logo material)
-//   const finalTextureUrl = canvas.toDataURL("image/png");
-//   state.patternUrl = finalTextureUrl; // update state to reflect final merged texture
-
-//   const viewers = Array.from(
-//     new Set([...(state.modelViewers || []), mainViewer].filter(Boolean))
-//   );
-
-//   await Promise.all(
-//     viewers.map((v) =>
-//       tryApplyMaterialTexture(v, PATTERN_MATERIAL_NAME, finalTextureUrl)
-//     )
-//   );
-
-//   modal.classList.remove("show");
-// });
-
-
-
-// Close on X click
-// closeModal.addEventListener("click", () => {
-//   modal.classList.remove("show");
-// });
-
-// Close when clicking outside the modal-content
-window.addEventListener("click", (e) => {
-  if (e.target === modal) {
-    modal.classList.remove("show");
+saveLogoBtn.addEventListener("click", async () => {
+  if (!canvas || !baseImageObj) {
+    alert("Canvas or base image not ready.");
+    return;
   }
+  const dataUrl = canvas.toDataURL({
+    format: 'png',
+    quality: 1.0,
+    multiplier: baseImageObj.width / canvas.getWidth()
+  });
+
+  // Apply pattern only to mainViewer
+  await tryApplyMaterialTexture(mainViewer, PATTERN_MATERIAL_NAME, dataUrl);
+
+  // Modal and UI cleanup (optional)
+  modal.classList.remove("show");
+  if (logoImageObj) {
+    canvas.remove(logoImageObj);
+    logoImageObj = null;
+  }
+  state.logoDataUrl = null;
 });
+
+
+
+
+
 
 
 

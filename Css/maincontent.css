@@ -140,16 +140,8 @@
   color: #333;
 }
 
-.colour_picker input[type="color"] {
-  -webkit-appearance: none;
-  /* border: none; */
-  width: 50px;
-  height: 30px;
-  padding: 0;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  background: none;
+.pickr{
+  /* border: 2px solid black; */
 }
 
 /* Removes default styling in browsers */
