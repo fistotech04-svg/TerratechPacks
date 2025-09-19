@@ -102,7 +102,7 @@
 }
 
 /* Pattern swatches */
-.accordion-content .pattern-swatch {
+.pattern-swatch {
   width: 70px;
   height: 70px;
   border-radius: 8px;
@@ -115,7 +115,7 @@
   border: 1px solid black;
 }
 
-.accordion-content .pattern-swatch.selected {
+.pattern-swatch.selected {
   border: 2px solid #007bff;
 }
 

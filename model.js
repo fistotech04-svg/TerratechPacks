@@ -1,3 +1,24 @@
+// ---------- PERFORMANCE HELPERS ----------
+const viewerTextureCache = new WeakMap(); // per-viewer texture cache
+
+function stripQuery(u) {
+  try {
+    const url = new URL(u, location.href);
+    return url.origin + url.pathname;
+  } catch (e) {
+    // fallback for relative/data urls
+    return String(u).split('?')[0];
+  }
+}
+
+function debounce(fn, wait = 150) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
+
 /********** AVAILABLE OPTIONS **********/
 const options = {
   lid: ["White", "Transparency"],
@@ -6,13 +27,15 @@ const options = {
 
 /********** PART MATERIAL NAMES **********/
 const PART_MATERIALS = {
-  lid: ["Top"], // adjust based on console logs
-  tub: [ "Bottom1"], // can hold multiple names
+  lid: ["Top","Top1_1"], // adjust based on console logs
+  tub: ["Bottom1","Bottom_1"], // can hold multiple names
 };
 
 /********** UPDATE MATERIAL COLOR **********/
 function updateMaterialColor(part, color, { skipWait = false } = {}) {
-  const viewers = Array.from(new Set([...(state.modelViewers || []), mainViewer].filter(Boolean)));
+  const viewers = Array.from(
+    new Set([...(state.modelViewers || []), mainViewer].filter(Boolean))
+  );
 
   const factors = {
     white: [1, 1, 1, 1],
@@ -29,7 +52,7 @@ function updateMaterialColor(part, color, { skipWait = false } = {}) {
       materialNames.forEach((name) => {
         const mat = viewer.model?.materials.find((m) => m.name === name);
         if (!mat) return;
-        
+
         // Remove texture if exists
         if (mat.pbrMetallicRoughness.baseColorTexture) {
           mat.pbrMetallicRoughness.baseColorTexture.setTexture(null);
@@ -53,11 +76,11 @@ function updateMaterialColor(part, color, { skipWait = false } = {}) {
   localStorage.setItem("selectedColors", JSON.stringify(state.selectedColors));
 }
 
-
 /********** RENDER OPTIONS **********/
 function renderOptions(part) {
   colorOptions.innerHTML = "";
-  const savedColor = state.selectedColors[part] || options[part][0].toLowerCase();
+  const savedColor =
+    state.selectedColors[part] || options[part][0].toLowerCase();
 
   options[part].forEach((color) => {
     const label = document.createElement("label");
@@ -69,7 +92,10 @@ function renderOptions(part) {
 
     input.addEventListener("change", () => {
       state.selectedColors[part] = input.value;
-      localStorage.setItem("selectedColors", JSON.stringify(state.selectedColors)); // ✅ save
+      localStorage.setItem(
+        "selectedColors",
+        JSON.stringify(state.selectedColors)
+      ); // ✅ save
       updateMaterialColor(part, input.value);
     });
 
@@ -80,7 +106,6 @@ function renderOptions(part) {
   // apply saved color immediately
   updateMaterialColor(part, savedColor);
 }
-
 
 /********** UPDATE PART **********/
 function updatePart(part) {
@@ -93,43 +118,86 @@ function updatePart(part) {
 const BASE_URL = "https://terratechpacks.com/App_3D/Patterns/";
 const MODEL_CATEGORIES = {
   Round: [
-    { name: "120ml Round Container", path: "./assets/Model_with_logo/120ml round with logo.glb" },
-    { name: "500ml Round Container", path: "./assets/Model_with_logo/500ml Round  with logo.glb" },
-  ],
-  Biryani: [
-    { name: "500ml Rectangular Container", path: "./assets/Model_with_logo/500ml Rect with logo.glb" },
+    {
+      name: "120ml Round Container",
+      path: "./assets/Model_with_logo/120ml round with logo.glb",
+    },
+    {
+      name: "500ml Round Container",
+      path: "./assets/Model_with_logo/500ml Round  with logo.glb",
+    },
   ],
   Square: [
-    { name: "500gms/450ml Container", path: "./assets/Model_with_logo/450ml cont with logo.glb" },
+    {
+      name: "500gms/450ml Container",
+      path: "./assets/Model_with_logo/450ml cont with logo.glb",
+    },
   ],
   "Sweet Boxes": [
-    { name: "250gms Sweet Box", path: "./assets/Model_with_logo/250gms SB with logo.glb" },
+    {
+      name: "250gms Sweet Box",
+      path: "./assets/Model_with_logo/250gms SB with logo.glb",
+    },
   ],
   "TE Sweet Boxes": [
-    { name: "250gms Sweet BoxTE", path: "./assets/Model_with_logo/TE 250 sb with logo.glb" },
+    {
+      name: "250gms Sweet BoxTE",
+      path: "./assets/Model_with_logo/TE 250 sb with logo.glb",
+    },
+  ],
+};
+
+const Rectangle_MODEL_CATEGORIES = {
+  Biryani: [
+    {
+      name: "500ml Rectangular Container",
+      path: "./assets/Model_with_logo/500ml Rect with logo.glb",
+    },
   ],
 };
 
 const MODEL_CATEGORIES_WITHOUT_LOGO = {
-   Round: [
-    { name: "120ml Round Container", path: "./assets/Model_without_logo/120ml round without logo.glb" },
-    { name: "500ml Round Container", path: "./assets/Model_without_logo/500ml Round  without logo.glb" },
-  ],
-  Biryani: [
-    { name: "500ml Rectangular Container", path: "./assets/Model_without_logo/500ml Rect without logo.glb" },
+  Round: [
+    {
+      name: "120ml Round Container",
+      path: "./assets/Model_without_logo/120ml round without logo.glb",
+    },
+    {
+      name: "500ml Round Container",
+      path: "./assets/Model_without_logo/500ml Round  without logo.glb",
+    },
   ],
   Square: [
-    { name: "500gms/450ml Container", path: "./assets/Model_without_logo/450ml cont without logo.glb" },
+    {
+      name: "500gms/450ml Container",
+      path: "./assets/Model_without_logo/450ml cont without logo.glb",
+    },
   ],
   "Sweet Boxes": [
-    { name: "250gms Sweet Box", path: "./assets/Model_without_logo/250gms SB without logo.glb" },
+    {
+      name: "250gms Sweet Box",
+      path: "./assets/Model_without_logo/250gms SB without logo.glb",
+    },
   ],
   "TE Sweet Boxes": [
-    { name: "250gms Sweet BoxTE", path: "./assets/Model_without_logo/TE 250 sb without logo.glb" },
+    {
+      name: "250gms Sweet BoxTE",
+      path: "./assets/Model_without_logo/TE 250 sb without logo.glb",
+    },
   ],
-}
+};
+
+const RECTANGLE_MODEL_CATEGORIES_WITHOUT_LOGO = {
+  Biryani: [
+    {
+      name: "500ml Rectangular Container",
+      path: "./assets/Model_without_logo/500ml Rect without logo.glb",
+    },
+  ],
+};
 
 const PATTERN_MATERIAL_NAME = "Bottom";
+const RECTANGLE_PATTERN_MATERIAL_NAME = "Top_1";
 const LOGO_MATERIAL_NAME = "Logo";
 
 /********** STATE **********/
@@ -207,7 +275,9 @@ function initThumbnails() {
       state.thumbnails.push({ card, name: model.name, path: model.path });
       state.modelViewers.push(mv);
 
-      card.addEventListener("click", () => selectModel(Number(card.dataset.index)));
+      card.addEventListener("click", () =>
+        selectModel(Number(card.dataset.index))
+      );
       modelIndex++;
     });
 
@@ -218,50 +288,121 @@ function initThumbnails() {
   markSelectedThumbnail(0);
 }
 
+/********** INIT RECTANGLE THUMBNAILS **********/
+function initRectangleThumbnails() {
+  if (!thumbGrid) return;
+  let modelIndex = state.thumbnails.length; // Continue from round models
+
+  Object.entries(Rectangle_MODEL_CATEGORIES).forEach(([category, models]) => {
+    const categoryDiv = document.createElement("div");
+    categoryDiv.className = "category-section";
+    const categoryTitle = document.createElement("h4");
+    categoryTitle.textContent = category;
+    categoryDiv.appendChild(categoryTitle);
+
+    const categoryGrid = document.createElement("div");
+    categoryGrid.className = "category-grid";
+
+    models.forEach((model) => {
+      const card = document.createElement("div");
+      card.className = "thumb-card";
+      card.dataset.index = modelIndex;
+
+      const mv = document.createElement("model-viewer");
+      mv.src = model.path;
+      mv.alt = model.name;
+      mv.disableZoom = true;
+      mv.cameraControls = true;
+      mv.reveal = "auto";
+      mv.interactionPrompt = "none";
+      mv.style.pointerEvents = "none";
+
+      const label = document.createElement("div");
+      label.className = "thumb-label";
+      label.textContent = model.name;
+
+      card.appendChild(mv);
+      card.appendChild(label);
+      categoryGrid.appendChild(card);
+
+      state.thumbnails.push({ card, name: model.name, path: model.path });
+      state.modelViewers.push(mv);
+
+      card.addEventListener("click", () =>
+        selectModel(Number(card.dataset.index))
+      );
+      modelIndex++;
+    });
+
+    categoryDiv.appendChild(categoryGrid);
+    thumbGrid.appendChild(categoryDiv);
+  });
+}
+
 function markSelectedThumbnail(index) {
-  state.thumbnails.forEach((t, i) => t.card.classList.toggle("selected", i === index));
+  state.thumbnails.forEach((t, i) =>
+    t.card.classList.toggle("selected", i === index)
+  );
 }
 
 /********** MODEL SELECTION **********/
-function selectModel(index) {
+async function selectModel(index) {
   if (index < 0 || index >= state.thumbnails.length) return;
   state.selectedIndex = index;
-  const { name, path } = state.thumbnails[index];
+  const selectedModel = state.thumbnails[index];
   if (!mainViewer) return;
 
-  const encoded = encodeURI(path) + (path.includes("?") ? "&" : "?") + "t=" + Date.now();
-  mainViewer.src = encoded;
-  mainViewer.alt = name;
-  mainModelTitle.textContent = name;
+  mainViewer.src = encodeURI(selectedModel.path + "?" + Date.now());
+  mainViewer.alt = selectedModel.name;
+  mainModelTitle.textContent = selectedModel.name;
 
-  markSelectedThumbnail(index);
+  mainViewer.addEventListener("load", async () => {
+    try {
+      // Detect correct pattern material for the model
+      const isRect = isRectangleModel(selectedModel.name);
+      const materialName = isRect ? RECTANGLE_PATTERN_MATERIAL_NAME : PATTERN_MATERIAL_NAME;
 
-  state.isWithoutLogoModel = Object.values(MODEL_CATEGORIES_WITHOUT_LOGO)
-    .flat()
-    .some(m => m.path === path);
+      // Save material override for future use
+      state.patternMaterialOverride = materialName;
 
-  mainViewer.addEventListener("load", () => {
-  // Apply pattern if any
-  if (state.patternUrl) applyPatternToAll(state.patternUrl);
-  if (state.logoDataUrl) tryApplyMaterialTexture(mainViewer, LOGO_MATERIAL_NAME, state.logoDataUrl);
+      // Reapply the existing pattern if available
+      if (state.patternUrl) {
+        await applyPatternToAll(state.patternUrl, {
+          forceReload: true,
+          materialOverride: materialName, // switch material correctly
+        });
+      }
 
-  // ✅ Apply all saved colors immediately
-  Object.entries(state.selectedColors).forEach(([part, color]) => {
-    updateMaterialColor(part, color, { skipWait: true }); 
-  });
-});
+      // Reapply logo if exists
+      if (state.logoDataUrl) {
+        await tryApplyMaterialTexture(mainViewer, LOGO_MATERIAL_NAME, state.logoDataUrl, { forceReload: true });
+      }
 
+      // Reapply selected colors
+      for (const [part, color] of Object.entries(state.selectedColors)) {
+        updateMaterialColor(part, color, { skipWait: true });
+      }
 
-
-
+    } catch (err) {
+      console.error("Error applying pattern on model load:", err);
+    }
+  }, { once: true });
 }
+
+
+
+
 
 /********** FETCH CATEGORIES & PATTERNS **********/
 async function fetchCategories() {
   try {
-    const res = await fetch("https://terratechpacks.com/App_3D/category_fetch.php");
+    const res = await fetch(
+      "https://terratechpacks.com/App_3D/category_fetch.php"
+    );
     const json = await res.json();
-    return (json.status === "success" && Array.isArray(json.data)) ? json.data : [];
+    return json.status === "success" && Array.isArray(json.data)
+      ? json.data
+      : [];
   } catch (err) {
     console.error("Failed to fetch categories:", err);
     return [];
@@ -275,15 +416,23 @@ async function fetchPatternsByCategory(categoryName) {
   try {
     const formData = new FormData();
     formData.append("category_name", categoryName);
-    const res = await fetch("https://terratechpacks.com/App_3D/pattern_url.php", { method: "POST", body: formData });
+    const res = await fetch(
+      "https://terratechpacks.com/App_3D/pattern_url.php",
+      { method: "POST", body: formData }
+    );
     const json = await res.json();
     // Check if data is valid and return the patterns that match the selected category
     if (json.status === "success" && Array.isArray(json.data)) {
-      return json.data.filter(p => p.category_name.toLowerCase() === categoryName.toLowerCase());
+      return json.data.filter(
+        (p) => p.category_name.toLowerCase() === categoryName.toLowerCase()
+      );
     }
     return [];
   } catch (err) {
-    console.error(`Failed to fetch patterns for category: ${categoryName}`, err);
+    console.error(
+      `Failed to fetch patterns for category: ${categoryName}`,
+      err
+    );
     return [];
   }
 }
@@ -294,17 +443,15 @@ async function initCategoryAccordion() {
   if (!accordion) return;
 
   const categories = await fetchCategories();
-  let allPatterns = [];  // Array to store all patterns from all categories
+  let allPatterns = [];
 
-  // Loop through each category to fetch patterns and collect them
   for (const cat of categories) {
     const patterns = await fetchPatternsByCategory(cat.category);
     patterns.forEach((p) => {
       const patternUrl = resolvePatternUrl(p.pattern_url);
-      allPatterns.push(patternUrl);  // Collect all patterns
+      allPatterns.push(patternUrl);
     });
 
-    // Create accordion items for each category
     const li = document.createElement("li");
 
     const header = document.createElement("div");
@@ -345,28 +492,41 @@ async function initCategoryAccordion() {
           content.innerHTML = "";
 
           if (patterns.length) {
-            // If patterns are available, display them
-            patterns.forEach((p) => {
+            patterns.forEach((p,index) => {
               const patternUrl = resolvePatternUrl(p.pattern_url);
               const sw = document.createElement("div");
               sw.className = "pattern-swatch";
               sw.style.backgroundImage = `url('${patternUrl}')`;
-              sw.title = `${p.category_name} - ${p.id}`;
-              sw.addEventListener("click", () => {
-              stopPatternCycle();
+              sw.title = `${p.category_name} - ${index+1}`;
+              sw.dataset.patternUrl = patternUrl;
 
-              if (state.isWithoutLogoModel) {
-                const proceed = confirm("You have the model without logo selected. Selecting a pattern will remove your custom logo. Do you want to continue?");
-                if (!proceed) return; // Cancel pattern application
-              }
+              sw.addEventListener("click", async () => {
+                console.log("Pattern selected:", sw.dataset.patternUrl);
+                stopPatternCycle();
 
-              applyPatternToAll(p.pattern_url);
+                if (state.isWithoutLogoModel) {
+                  const confirmed = confirm(
+                    "Selecting a new pattern will remove your custom logo. Proceed?"
+                  );
+                  if (!confirmed) return;
+                }
 
-              if (state.isWithoutLogoModel) {
-                state.logoDataUrl = null;
-                // Optionally reset logo textures in viewers here if needed
-              }
-            });
+                // ✅ Highlight the selected swatch immediately
+                const selectedUrl = sw.dataset.patternUrl?.split("?")[0];
+                state.patternUrl = selectedUrl;
+
+                document.querySelectorAll(".pattern-swatch").forEach((el) => {
+                  const elUrl = el.dataset.patternUrl?.split("?")[0];
+                  el.classList.toggle("selected", elUrl === selectedUrl);
+                });
+
+                await applyPatternToAll(sw.dataset.patternUrl);
+
+                if (state.isWithoutLogo) {
+                  state.logoDataUrl = null;
+                }
+              });
+
               content.appendChild(sw);
             });
 
@@ -374,12 +534,11 @@ async function initCategoryAccordion() {
             content.style.maxHeight = content.scrollHeight + "px";
             header.querySelector(".drop").className = "fa-solid fa-angle-up drop";
           } else {
-            // If no patterns are available for this category, display a message
             const noPattern = document.createElement("div");
             noPattern.textContent = "No patterns available for this category";
             noPattern.style.padding = "10px";
             content.appendChild(noPattern);
-            content.dataset.loaded = "true";  // Mark this content as loaded
+            content.dataset.loaded = "true";
             content.style.maxHeight = content.scrollHeight + "px";
             header.querySelector(".drop").className = "fa-solid fa-angle-up drop";
           }
@@ -391,12 +550,7 @@ async function initCategoryAccordion() {
     });
   }
 
-  // After collecting all patterns, start the pattern cycle for all of them
-  if (allPatterns.length > 0) {
-    startPatternCycle(allPatterns, 4000);  // Start the cycle with a 3000ms interval
-  } else {
-    console.warn("No patterns found to start the cycle.");
-  }
+  return allPatterns;
 }
 
 // ================== EXPORT ==================
@@ -431,33 +585,43 @@ exportBtn.addEventListener("click", async () => {
   }
 });
 
-
-/********** PATTERN CYCLE **********/
+/********** PATTERN CYCLE (update this part) **********/
 function startPatternCycle(patternUrls = [], interval = 2000) {
-  stopPatternCycle();  // Stop any ongoing cycle first
-
-  if (!patternUrls.length) {
-    console.warn("No patterns provided for the cycle");
-    return;
-  }
+  stopPatternCycle();
+  if (!patternUrls.length) return;
 
   let idx = 0;
+  let lastSelectedEl = null;
+
   state.patternCycleTimer = setInterval(() => {
-    const patternUrl = `${patternUrls[idx % patternUrls.length]}?t=${Date.now()}`;
-    applyPatternToAll(patternUrl);
+    const patternUrl = patternUrls[idx % patternUrls.length];
+    if (!patternUrl) { idx++; return; }
 
-    // Highlight the current pattern swatch during the cycle
-    const currentBaseUrl = resolvePatternUrl(patternUrls[idx % patternUrls.length]);
-
-    // Update the selected swatch (blue border)
-    document.querySelectorAll(".pattern-swatch").forEach((sw) => {
-      const bg = sw.style.backgroundImage.replace(/^url\(["']?|["']?\)$/g, "");
-      sw.classList.toggle("selected", bg === currentBaseUrl);
+    // apply to all viewers in parallel (skip wait)
+    const viewers = Array.from(new Set([...(state.modelViewers || []), mainViewer].filter(Boolean)));
+    viewers.forEach((viewer) => {
+      if (!viewer.model) return;
+      const modelName = (viewer.alt || "").toLowerCase();
+      const materialName = isRectangleModel(modelName) ? RECTANGLE_PATTERN_MATERIAL_NAME : PATTERN_MATERIAL_NAME;
+      tryApplyMaterialTexture(viewer, materialName, patternUrl, { skipWait: true }).catch(() => {});
     });
 
+    // efficient swatch update: only touch the previously selected and the new one
+    const cleanUrl = patternUrl.split("?")[0];
+    let matched = null;
+    document.querySelectorAll(".pattern-swatch").forEach((sw) => {
+      if (sw.dataset.patternUrl?.split("?")[0] === cleanUrl) matched = sw;
+    });
+
+    if (lastSelectedEl && lastSelectedEl !== matched) lastSelectedEl.classList.remove("selected");
+    if (matched && !matched.classList.contains("selected")) matched.classList.add("selected");
+    lastSelectedEl = matched;
+
+    state.patternUrl = cleanUrl;
     idx++;
   }, interval);
 }
+
 
 
 function stopPatternCycle() {
@@ -468,28 +632,69 @@ function stopPatternCycle() {
   }
 }
 
+// Utility: detect rectangle model
+function isRectangleModel(name) {
+  if (!name) return false;
+  const lower = name.trim().toLowerCase();
+  const keywords = ["rect", "rectangular", "biryani"];
+  const result = keywords.some((k) => lower.includes(k));
+  console.log(`[isRectangleModel] "${name}" => ${result ? "✅ RECT" : "❌ ROUND"}`);
+  return result;
+}
+
+
+
 /********** APPLY PATTERN TO ALL VIEWERS **********/
-async function applyPatternToAll(patternUrl) {
+async function applyPatternToAll(patternUrl, { forceReload = false, materialOverride = null } = {}) {
   if (!patternUrl) return;
 
-  // Prepare base and cache-busted URLs
-  const baseUrl = /^https?:\/\//i.test(patternUrl) ? patternUrl : `${BASE_URL}${patternUrl}`;
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  const fullUrl = `${baseUrl}${separator}t=${Date.now()}`;
+  const cleanSelectedUrl = patternUrl.split("?")[0];
+  state.patternUrl = cleanSelectedUrl;
 
-  state.patternUrl = baseUrl; // Save base URL for accurate future comparison
-
-  console.log("Applying pattern:", fullUrl);
-
-  // Update pattern swatch selection
+  // Highlight swatch
   document.querySelectorAll(".pattern-swatch").forEach((sw) => {
-    const bg = sw.style.backgroundImage.replace(/^url\(["']?|["']?\)$/g, ""); // remove url() wrapper
-    sw.classList.toggle("selected", bg === baseUrl);
+    const swatchUrl = sw.dataset.patternUrl?.split("?")[0];
+    sw.classList.toggle("selected", swatchUrl === cleanSelectedUrl);
   });
 
   const viewers = Array.from(new Set([...(state.modelViewers || []), mainViewer].filter(Boolean)));
-  await Promise.all(viewers.map((viewer) => tryApplyMaterialTexture(viewer, PATTERN_MATERIAL_NAME, fullUrl)));
+
+  await Promise.all(
+    viewers.map(async (viewer) => {
+      if (!viewer.model) {
+        await new Promise((resolve) => viewer.addEventListener("load", resolve, { once: true }));
+      }
+
+      // Always decide material: use override if provided, else detect rectangle
+      let materialName = materialOverride;
+      if (!materialName) {
+        materialName = isRectangleModel(viewer.alt || "")
+          ? RECTANGLE_PATTERN_MATERIAL_NAME
+          : PATTERN_MATERIAL_NAME;
+      }
+
+      // Clear old texture before applying new
+      const mat = viewer.model?.materials.find((m) => m.name === materialName);
+      if (mat?.pbrMetallicRoughness.baseColorTexture) {
+        mat.pbrMetallicRoughness.baseColorTexture.setTexture(null);
+      }
+
+      await tryApplyMaterialTexture(viewer, materialName, patternUrl, { skipWait: true, forceReload });
+    })
+  );
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 /********** CREATE LOGO CANVAS WITHOUT STRETCH **********/
 function createLogoCanvas(file, canvasSize = 512, logoScale = 0.8) {
@@ -530,34 +735,79 @@ function createLogoCanvas(file, canvasSize = 512, logoScale = 0.8) {
   });
 }
 
-/********** TRY APPLY MATERIAL TEXTURE **********/
-async function tryApplyMaterialTexture(viewer, materialName, textureUrl) {
+/********** OPTIMIZED: TRY APPLY MATERIAL TEXTURE **********/
+async function tryApplyMaterialTexture(
+  viewer,
+  materialNames,
+  textureUrl,
+  { skipWait = false, forceReload = false } = {}
+) {
   if (!viewer || !textureUrl) return;
-  if (!viewer.model) await new Promise((res) => viewer.addEventListener("load", res, { once: true }));
 
-  const mat = viewer.model.materials?.find((m) => m.name === materialName);
-  if (!mat) return console.warn(`Material "${materialName}" not found`);
+  // Wait for model to load if necessary
+  if (!viewer.model && !skipWait) {
+    await new Promise((res) =>
+      viewer.addEventListener("load", res, { once: true })
+    );
+  }
 
-  const tex = await viewer.createTexture(encodeURI(textureUrl));
-  mat.pbrMetallicRoughness.baseColorTexture.setTexture(tex);
+  // Normalize material names to an array
+  const names = Array.isArray(materialNames) ? materialNames : [materialNames];
 
-  try {
-    if (tex.texture) {
-      tex.texture.transform = {
-        offset: [0, 0], // top-left alignment
-        scale: [1, 1],  // cover entire material once
-        rotation: 0
-      };
-    }
-  } catch (err) {
-    console.warn("Texture transform not supported:", err);
+  // Find the first matching material on the viewer
+  const mat = names
+    .map((n) => viewer.model?.materials?.find((m) => m.name === n))
+    .find(Boolean);
+
+  if (!mat) {
+    console.warn(`Materials [${names.join(", ")}] not found on viewer`);
+    return;
+  }
+
+  // Normalize URLs to avoid repeated application
+  const currentUri = mat.pbrMetallicRoughness.baseColorTexture?.texture?.source?.uri;
+  const normalizedCurrent = currentUri ? stripQuery(currentUri) : null;
+  const normalizedNew = stripQuery(textureUrl);
+
+  if (normalizedCurrent === normalizedNew && !forceReload) {
+    return; // Texture already applied
   }
 
   try {
-    tex.texture.sampler.setWrapMode("CLAMP_TO_EDGE"); // prevent repeating
-  } catch (_) {}
+    // Initialize per-viewer cache
+    let vcache = viewerTextureCache.get(viewer);
+    if (!vcache) {
+      vcache = new Map();
+      viewerTextureCache.set(viewer, vcache);
+    }
 
-  mat.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+    const cacheKey = mat.name + "::" + normalizedNew;
+    let tex;
+
+    if (!forceReload && vcache.has(cacheKey)) {
+      tex = vcache.get(cacheKey); // Use cached texture
+    } else {
+      tex = await viewer.createTexture(encodeURI(textureUrl)); // Load new texture
+      vcache.set(cacheKey, tex);
+    }
+
+    // Apply texture
+    mat.pbrMetallicRoughness.baseColorTexture.setTexture(tex);
+
+    // Ensure proper transform and wrapping
+    if (tex.texture) {
+      tex.texture.transform = { offset: [0, 0], scale: [1, 1], rotation: 0 };
+      if (tex.texture.sampler && typeof tex.texture.sampler.setWrapMode === "function") {
+        tex.texture.sampler.setWrapMode("CLAMP_TO_EDGE");
+      }
+    }
+
+    // Reset base color to white and opaque
+    mat.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+    mat.setAlphaMode("OPAQUE");
+  } catch (err) {
+    console.warn("Failed to apply texture:", err);
+  }
 }
 
 
@@ -572,9 +822,7 @@ if (logoInput) {
     const logoDataUrl = await createLogoCanvas(file, 512, 0.8); // Canvas size and logo scale
     state.logoDataUrl = logoDataUrl;
 
-    const viewers = Array.from(
-      new Set([...(state.modelViewers || []), mainViewer].filter(Boolean))
-    );
+    const viewers = [mainViewer]; // ✅ Only apply to the main model, not thumbnails
 
     await Promise.all(
       viewers.map((v) =>
@@ -608,31 +856,33 @@ function applyColor(colorStr) {
 // Update border color of the Pickr preview button based on brightness
 function updatePickrBorderColor(hexColor) {
   const brightness = getBrightness(hexColor);
-  const previewButton = document.querySelector('.pickr .pcr-button');
+  const previewButton = document.querySelector(".pickr .pcr-button");
 
   if (previewButton) {
-    previewButton.style.border = `2px solid ${brightness < 128 ? 'white' : 'black'}`;
+    previewButton.style.border = `2px solid ${
+      brightness < 128 ? "white" : "black"
+    }`;
   }
 }
 
 // Initialize Pickr
 const pickr = Pickr.create({
-  el: '#bgColorPicker',
-  theme: 'nano',
-  default: '#ffffff',
+  el: "#bgColorPicker",
+  theme: "nano",
+  default: "#ffffff",
   components: {
     preview: true,
     opacity: true,
     hue: true,
     interaction: {
       input: true,
-      save: true
-    }
-  }
+      save: true,
+    },
+  },
 });
 
 // When Pickr is ready
-pickr.on('init', () => {
+pickr.on("init", () => {
   const savedColor = localStorage.getItem("bgColor") || "#ffffff";
   applyColor(savedColor);
   pickr.setColor(savedColor);
@@ -640,7 +890,7 @@ pickr.on('init', () => {
 });
 
 // On color change (live)
-pickr.on('change', (color) => {
+pickr.on("change", (color) => {
   const rgbaColor = color.toRGBA().toString();
   const hexColor = color.toHEXA().toString();
 
@@ -649,15 +899,12 @@ pickr.on('change', (color) => {
 });
 
 // Optional: Hide picker when "Save" is clicked
-pickr.on('save', () => {
+pickr.on("save", () => {
   pickr.hide();
 });
 
-
-
-
 function preloadImages(urls = []) {
-  urls.forEach(url => {
+  urls.forEach((url) => {
     const img = new Image();
     img.src = url + "?preload=" + Date.now(); // force preload with unique param
   });
@@ -677,7 +924,7 @@ const uploadInput = document.getElementById("uploadBtn");
 const saveLogoBtn = document.getElementById("saveLogoBtn");
 
 // Prevent modal from closing when clicking outside the modal-content
-modal.addEventListener('click', (event) => {
+modal.addEventListener("click", (event) => {
   // If the clicked target is the modal background (not modal-content), do nothing
   if (event.target === modal) {
     // Optional: show a warning or just ignore the click
@@ -689,8 +936,10 @@ modal.addEventListener('click', (event) => {
 function getBaseImageBounds() {
   if (!baseImageObj) return null;
 
-  const imgLeft = baseImageObj.left - (baseImageObj.width * baseImageObj.scaleX) / 2;
-  const imgTop = baseImageObj.top - (baseImageObj.height * baseImageObj.scaleY) / 2;
+  const imgLeft =
+    baseImageObj.left - (baseImageObj.width * baseImageObj.scaleX) / 2;
+  const imgTop =
+    baseImageObj.top - (baseImageObj.height * baseImageObj.scaleY) / 2;
   const imgWidth = baseImageObj.width * baseImageObj.scaleX;
   const imgHeight = baseImageObj.height * baseImageObj.scaleY;
 
@@ -704,7 +953,7 @@ function getBaseImageBounds() {
   };
 }
 
-const fabricCanvasElem = document.getElementById('fabricCanvas');
+const fabricCanvasElem = document.getElementById("fabricCanvas");
 
 // Resize canvas to fit wrapper size
 function resizeCanvas() {
@@ -728,14 +977,13 @@ function resizeCanvas() {
   }
 }
 
-
 // Initialize Fabric canvas and load base image (pattern)
 function initFabricCanvas() {
   if (canvas) {
     canvas.dispose(); // clean up old canvas if exists
   }
 
-  canvas = new fabric.Canvas('fabricCanvas', {
+  canvas = new fabric.Canvas("fabricCanvas", {
     selection: false,
     preserveObjectStacking: true,
   });
@@ -745,28 +993,30 @@ function initFabricCanvas() {
   if (state.patternUrl) {
     previewLoader.style.display = "block"; // show loader before base image loads
 
-    fabric.Image.fromURL(state.patternUrl + "?t=" + Date.now(), (img) => {
-  baseImageObj = img;
+    fabric.Image.fromURL(
+      state.patternUrl + "?t=" + Date.now(),
+      (img) => {
+        baseImageObj = img;
 
-  // Scale image to exactly fit canvas width and height (may stretch)
-  img.set({
-    scaleX: canvas.width / img.width,
-    scaleY: canvas.height / img.height,
-    selectable: false,
-    evented: false,
-    left: canvas.width / 2,
-    top: canvas.height / 2,
-    originX: 'center',
-    originY: 'center',
-  });
+        // Scale image to exactly fit canvas width and height (may stretch)
+        img.set({
+          scaleX: canvas.width / img.width,
+          scaleY: canvas.height / img.height,
+          selectable: false,
+          evented: false,
+          left: canvas.width / 2,
+          top: canvas.height / 2,
+          originX: "center",
+          originY: "center",
+        });
 
-  canvas.setBackgroundImage(img, () => {
-    canvas.renderAll();
-    previewLoader.style.display = "none";
-  });
-}, { crossOrigin: "anonymous" });
-
-
+        canvas.setBackgroundImage(img, () => {
+          canvas.renderAll();
+          previewLoader.style.display = "none";
+        });
+      },
+      { crossOrigin: "anonymous" }
+    );
   } else {
     previewLoader.style.display = "none"; // no base image, hide loader immediately
   }
@@ -779,108 +1029,118 @@ function addLogoToCanvas(dataUrl) {
     logoImageObj = null;
   }
 
-  fabric.Image.fromURL(dataUrl, (img) => {
-    logoImageObj = img;
+  fabric.Image.fromURL(
+    dataUrl,
+    (img) => {
+      logoImageObj = img;
 
-    const maxDisplaySize = Math.min(canvas.getWidth(), canvas.getHeight()) / 2;
-    const scaleRatio = maxDisplaySize / Math.max(img.width, img.height);
-    img.scale(scaleRatio);
+      const maxDisplaySize =
+        Math.min(canvas.getWidth(), canvas.getHeight()) / 2;
+      const scaleRatio = maxDisplaySize / Math.max(img.width, img.height);
+      img.scale(scaleRatio);
 
-    img.set({
-      originX: 'left',
-      originY: 'top',
-      cornerStyle: 'circle',
-      cornerColor: 'yellow',
-      transparentCorners: false,
-      lockScalingFlip: true,
-      selectable: true,
-      hasRotatingPoint: true,
-      cornerSize: 12,
-      minScaleLimit: 0.1,
-    });
+      img.set({
+        originX: "left",
+        originY: "top",
+        cornerStyle: "circle",
+        cornerColor: "yellow",
+        transparentCorners: false,
+        lockScalingFlip: true,
+        selectable: true,
+        hasRotatingPoint: true,
+        cornerSize: 12,
+        minScaleLimit: 0.1,
+      });
 
-    // Initial logo position
-    img.set({
-      left: 10,
-      top: 10,
-    });
+      // Initial logo position
+      img.set({
+        left: 10,
+        top: 10,
+      });
 
-    canvas.add(img);
-    canvas.setActiveObject(img);
-    canvas.renderAll();
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
 
-    // Enforce boundaries when modified
-    img.on('modified', () => {
-      const bound = img.getBoundingRect();
-      const canvasWidth = canvas.getWidth();
-      const canvasHeight = canvas.getHeight();
+      // Enforce boundaries when modified
+      img.on("modified", () => {
+        const bound = img.getBoundingRect();
+        const canvasWidth = canvas.getWidth();
+        const canvasHeight = canvas.getHeight();
 
-      let newLeft = img.left;
-      let newTop = img.top;
+        let newLeft = img.left;
+        let newTop = img.top;
 
-      const padding = 1;
-      let moved = false;
+        const padding = 1;
+        let moved = false;
 
-      // Check horizontal bounds
-      if (bound.left < padding) {
-        newLeft += padding - bound.left;
-        moved = true;
-      } else if (bound.left + bound.width > canvasWidth - padding) {
-        newLeft -= (bound.left + bound.width) - canvasWidth + padding;
-        moved = true;
-      }
+        // Check horizontal bounds
+        if (bound.left < padding) {
+          newLeft += padding - bound.left;
+          moved = true;
+        } else if (bound.left + bound.width > canvasWidth - padding) {
+          newLeft -= bound.left + bound.width - canvasWidth + padding;
+          moved = true;
+        }
 
-      // Check vertical bounds
-      if (bound.top < padding) {
-        newTop += padding - bound.top;
-        moved = true;
-      } else if (bound.top + bound.height > canvasHeight - padding) {
-        newTop -= (bound.top + bound.height) - canvasHeight + padding;
-        moved = true;
-      }
+        // Check vertical bounds
+        if (bound.top < padding) {
+          newTop += padding - bound.top;
+          moved = true;
+        } else if (bound.top + bound.height > canvasHeight - padding) {
+          newTop -= bound.top + bound.height - canvasHeight + padding;
+          moved = true;
+        }
 
-      if (moved) {
-        const startLeft = img.left;
-        const startTop = img.top;
+        if (moved) {
+          const startLeft = img.left;
+          const startTop = img.top;
 
-        fabric.util.animate({
-          startValue: 0,
-          endValue: 1,
-          duration: 400,
-          easing: fabric.util.ease.easeOutCubic,
-          onChange: (t) => {
-            img.set({
-              left: startLeft + (newLeft - startLeft) * t,
-              top: startTop + (newTop - startTop) * t,
-            });
-            canvas.renderAll();
-          },
-          onComplete: () => {
-            img.set({ left: newLeft, top: newTop });
-            canvas.renderAll();
-          }
-        });
-      }
-    });
-  }, { crossOrigin: "anonymous" });
+          fabric.util.animate({
+            startValue: 0,
+            endValue: 1,
+            duration: 400,
+            easing: fabric.util.ease.easeOutCubic,
+            onChange: (t) => {
+              img.set({
+                left: startLeft + (newLeft - startLeft) * t,
+                top: startTop + (newTop - startTop) * t,
+              });
+              canvas.renderAll();
+            },
+            onComplete: () => {
+              img.set({ left: newLeft, top: newTop });
+              canvas.renderAll();
+            },
+          });
+        }
+      });
+    },
+    { crossOrigin: "anonymous" }
+  );
 }
 
 function getModelWithoutLogoPath(selectedIndex) {
-  // Find model name from current thumbnails by selectedIndex
   const selectedModelName = state.thumbnails[selectedIndex]?.name;
   if (!selectedModelName) return null;
-  
-  // Search model path in MODEL_CATEGORIES_WITHOUT_LOGO for matching name
+
+  // Search in regular without logo categories
   for (const models of Object.values(MODEL_CATEGORIES_WITHOUT_LOGO)) {
-    const found = models.find(m => m.name === selectedModelName);
+    const found = models.find((m) => m.name === selectedModelName);
     if (found) return found.path;
   }
-  return null; // fallback if no match found
+
+  // Search also inside rectangle without logo categories
+  for (const models of Object.values(RECTANGLE_MODEL_CATEGORIES_WITHOUT_LOGO)) {
+    const found = models.find((m) => m.name === selectedModelName);
+    if (found) return found.path;
+  }
+
+  return null;
 }
 
-
 // Open modal and initialize everything
-editBtn.addEventListener('click', () => {
+editBtn.addEventListener("click", () => {
   if (state.patternCycleTimer) {
     alert("Please select the pattern before editing.");
     return;
@@ -891,7 +1151,11 @@ editBtn.addEventListener('click', () => {
   // Get "without logo" model path based on current selection
   const withoutLogoPath = getModelWithoutLogoPath(state.selectedIndex);
   if (withoutLogoPath && mainViewer) {
-    const encoded = encodeURI(withoutLogoPath) + (withoutLogoPath.includes("?") ? "&" : "?") + "t=" + Date.now();
+    const encoded =
+      encodeURI(withoutLogoPath) +
+      (withoutLogoPath.includes("?") ? "&" : "?") +
+      "t=" +
+      Date.now();
 
     // Listen for model load event before applying colors
     mainViewer.addEventListener(
@@ -906,7 +1170,7 @@ editBtn.addEventListener('click', () => {
     );
 
     mainViewer.src = encoded;
-    state.isWithoutLogoModel = true;  // set true when loading without logo model
+    state.isWithoutLogoModel = true; // set true when loading without logo model
   }
 
   if (modal) modal.classList.add("show");
@@ -921,17 +1185,15 @@ editBtn.addEventListener('click', () => {
   }
 });
 
-
-
 // Upload logo and add to canvas
-uploadInput.addEventListener('change', (event) => {
+uploadInput.addEventListener("change", (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
   // 🔒 Check if file is PNG
-  if (file.type !== 'image/png') {
+  if (file.type !== "image/png") {
     alert("Please upload a PNG image only.");
-    uploadInput.value = ''; // Clear input
+    uploadInput.value = ""; // Clear input
     return;
   }
 
@@ -949,34 +1211,83 @@ uploadInput.addEventListener('change', (event) => {
   reader.readAsDataURL(file);
 });
 
-
 // Optional: close modal logic
 if (closeModal) {
-  closeModal.addEventListener('click', () => {
+  closeModal.addEventListener("click", () => {
     if (modal) modal.classList.remove("show");
 
-    // Restore mainViewer to model WITH logo
     const currentIndex = state.selectedIndex;
-    const originalModel = state.thumbnails[currentIndex];
-    if (originalModel && mainViewer) {
-      const pathWithLogo = originalModel.path;
-      const encoded = encodeURI(pathWithLogo) + (pathWithLogo.includes("?") ? "&" : "?") + "t=" + Date.now();
+    const selectedModelName = state.thumbnails[currentIndex]?.name;
 
-      // Apply textures and colors AFTER model loads
-      mainViewer.addEventListener('load', async () => {
+    if (!selectedModelName || !mainViewer) return;
+
+    // Function to find WITH logo path by name in categories
+    function getWithLogoModelPathByName(name) {
+      // Search in regular model categories
+      for (const models of Object.values(MODEL_CATEGORIES)) {
+        const found = models.find((m) => m.name === name);
+        if (found) return found.path;
+      }
+      // Search in rectangle model categories
+      for (const models of Object.values(Rectangle_MODEL_CATEGORIES)) {
+        const found = models.find((m) => m.name === name);
+        if (found) return found.path;
+      }
+      return null;
+    }
+
+    // Determine the model path to restore (WITH logo)
+    let pathWithLogo = null;
+
+    if (state.isWithoutLogoModel) {
+      // If currently on without logo model, restore the corresponding with logo path
+      pathWithLogo = getWithLogoModelPathByName(selectedModelName);
+    } else {
+      // Otherwise just use original selected thumbnail path
+      pathWithLogo = state.thumbnails[currentIndex]?.path;
+    }
+
+    if (!pathWithLogo) return;
+
+    const encoded =
+      encodeURI(pathWithLogo) +
+      (pathWithLogo.includes("?") ? "&" : "?") +
+      "t=" +
+      Date.now();
+
+    // Apply textures and colors AFTER model loads
+    mainViewer.addEventListener(
+      "load",
+      async () => {
         if (state.patternUrl) {
-          await tryApplyMaterialTexture(mainViewer, PATTERN_MATERIAL_NAME, state.patternUrl);
-        }
+  const isRect = isRectangleModel(mainViewer.alt || "");
+  const matName = isRect ? RECTANGLE_PATTERN_MATERIAL_NAME : PATTERN_MATERIAL_NAME;
+
+  await tryApplyMaterialTexture(
+    mainViewer,
+    matName,
+    state.patternUrl,
+    { forceReload: true }
+  );
+}
+
         if (state.logoDataUrl) {
-          await tryApplyMaterialTexture(mainViewer, LOGO_MATERIAL_NAME, state.logoDataUrl);
+          await tryApplyMaterialTexture(
+            mainViewer,
+            LOGO_MATERIAL_NAME,
+            state.logoDataUrl
+          );
         }
         Object.entries(state.selectedColors).forEach(([part, color]) => {
           updateMaterialColor(part, color, { skipWait: true });
         });
-      }, { once: true });
 
-      mainViewer.src = encoded;
-    }
+        state.isWithoutLogoModel = false; // reset flag after restoring
+      },
+      { once: true }
+    );
+
+    mainViewer.src = encoded;
 
     if (canvas) {
       // Remove logo if present
@@ -993,32 +1304,48 @@ if (closeModal) {
     state.logoDataUrl = null;
 
     // Optionally clear file input
-    uploadInput.value = '';
+    uploadInput.value = "";
   });
 }
 
-
-
 // Resize canvas on window resize
-window.addEventListener('resize', () => {
-  resizeCanvas();
-});
+window.addEventListener("resize", debounce(resizeCanvas, 150));
+
 
 saveLogoBtn.addEventListener("click", async () => {
   if (!canvas || !baseImageObj) {
     alert("Canvas or base image not ready.");
     return;
   }
+
   const dataUrl = canvas.toDataURL({
-    format: 'png',
+    format: "png",
     quality: 1.0,
-    multiplier: baseImageObj.width / canvas.getWidth()
+    multiplier: baseImageObj.width / canvas.getWidth(),
   });
 
-  // Apply pattern only to mainViewer
-  await tryApplyMaterialTexture(mainViewer, PATTERN_MATERIAL_NAME, dataUrl);
+  // Helper to apply pattern based on model type (rectangle vs round)
+  async function applyPatternBasedOnModelType(viewer, textureUrl) {
+    if (!viewer || !textureUrl) return;
 
-  // Modal and UI cleanup (optional)
+    const modelName = viewer.alt || "";
+    const isRect = isRectangleModel(modelName);
+
+    if (isRect) {
+      await tryApplyMaterialTexture(
+        viewer,
+        RECTANGLE_PATTERN_MATERIAL_NAME,
+        textureUrl
+      ); // Apply on "Top_1"
+    } else {
+      await tryApplyMaterialTexture(viewer, PATTERN_MATERIAL_NAME, textureUrl); // Apply on "Bottom"
+    }
+  }
+
+  // Apply pattern/logo texture to mainViewer conditionally
+  await applyPatternBasedOnModelType(mainViewer, dataUrl);
+
+  // Modal and UI cleanup
   modal.classList.remove("show");
   if (logoImageObj) {
     canvas.remove(logoImageObj);
@@ -1026,14 +1353,6 @@ saveLogoBtn.addEventListener("click", async () => {
   }
   state.logoDataUrl = null;
 });
-
-
-
-
-
-
-
-
 
 /********** INIT **********/
 document.addEventListener("DOMContentLoaded", async () => {
@@ -1049,6 +1368,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ✅ Wait for thumbnails and categories to load
   await initThumbnails();
+  await initRectangleThumbnails();
   const allPatterns = await initCategoryAccordion(); // must return all patterns!
 
   if (mainViewer && !state.modelViewers.includes(mainViewer)) {
@@ -1063,7 +1383,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ✅ Restore saved colors
   Object.keys(state.selectedColors).forEach((part) => {
-    const savedColor = state.selectedColors[part] || options[part][0].toLowerCase();
+    const savedColor =
+      state.selectedColors[part] || options[part][0].toLowerCase();
     updateMaterialColor(part, savedColor);
   });
 
@@ -1081,6 +1402,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 500); // Optional fade-out
   }
 });
-
-
-
