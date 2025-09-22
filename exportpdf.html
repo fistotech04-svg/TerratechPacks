@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="shortcut icon"
+      href="./assets/Logo/logo-icon.png"
+      type="image/x-icon"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://site-assets.fontawesome.com/releases/v6.4.2/css/all.css"
+    />
+    <link rel="stylesheet" href="exportpdf.css" />
+    <script
+      type="module"
+      src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>TerraTechPacks 3D</title>
+  </head>
+  <body>
+    <div class="export_main">
+      <nav class="export_nav">
+        <div>
+          <img
+            src="./assets/Logo/terratechpacks.png"
+            alt="TerraTech_logo"
+            class="nav_logo"
+          />
+        </div>
+        <div>
+          <h3>Dual Perspective Render Capture</h3>
+        </div>
+        <div>
+          <button class="export_btn" id="export_btn">Export Pdf</button>
+        </div>
+      </nav>
+      <div class="export_content">
+        <div class="model_view">
+          <model-viewer
+            id="modelViewer"
+            src="./assets/model.glb"
+            camera-controls
+            exposure="1"
+            shadow-intensity="0.5"
+            disable-tap
+            disable-pan
+            ar
+            interaction-prompt="none"
+            camera-orbit="-540.9deg 84.49deg 0.4649m" 
+            field-of-view="45deg">
+          </model-viewer>
+        </div>
+        <div class="model_inputs">
+          <!-- Option 1 -->
+          <div class="input-section">
+            <h4>Option 1</h4>
+            <div class="input-group">
+              <input type="text" id="textureTitle1" placeholder="Texture Title 1">
+              <input type="file" name="texture1" id="texture1">
+            </div>
+            <div class="input-row">
+              <div class="color-control">
+                <label for="topColor1">Lid Color:</label>
+                <input type="color" id="topColor1" value="#ffffff">
+              </div>
+              <div class="color-control">
+                <label for="bgColor1">BG Color:</label>
+                <input type="color" id="bgColor1" value="#f5d2da">
+              </div>
+            </div>
+          </div>
+
+          <!-- Option 2 -->
+          <div class="input-section">
+            <h4>Option 2</h4>
+            <div class="input-group">
+              <input type="text" id="textureTitle2" placeholder="Texture Title 2">
+              <input type="file" name="texture2" id="texture2">
+            </div>
+            <div class="input-row">
+              <div class="color-control">
+                <label for="topColor2">Lid Color:</label>
+                <input type="color" id="topColor2" value="#ffffff">
+              </div>
+              <div class="color-control">
+                <label for="bgColor2">BG Color:</label>
+                <input type="color" id="bgColor2" value="#e8f4fd">
+              </div>
+            </div>
+          </div>
+
+          <!-- Option 3 -->
+          <div class="input-section">
+            <h4>Option 3</h4>
+            <div class="input-group">
+              <input type="text" id="textureTitle3" placeholder="Texture Title 3">
+              <input type="file" name="texture3" id="texture3">
+            </div>
+            <div class="input-row">
+              <div class="color-control">
+                <label for="topColor3">Lid Color:</label>
+                <input type="color" id="topColor3" value="#ffffff">
+              </div>
+              <div class="color-control">
+                <label for="bgColor3">BG Color:</label>
+                <input type="color" id="bgColor3" value="#fff2e6">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="logo_section">
+        <div class="custom-logo-upload">
+          <h4>Upload Custom Logo</h4>
+          <input type="file" id="customLogoInput" accept="image/*" />
+          <img id="customLogoPreview" alt="Custom Logo Preview" style="max-width:150px; margin-top:10px; display:none;" />
+        </div>
+      </div>
+      <div class="render_models">
+        <h4>Rendered Models</h4>
+        <div id="renderedImages"></div>
+      </div>
+      <div id="pdfLoadingOverlay">Generating PDF... Please wait</div>
+    </div>
+    <script src="./export.js"></script>
+  </body>
+</html>

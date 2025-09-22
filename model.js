@@ -7,7 +7,7 @@ function stripQuery(u) {
     return url.origin + url.pathname;
   } catch (e) {
     // fallback for relative/data urls
-    return String(u).split('?')[0];
+    return String(u).split("?")[0];
   }
 }
 
@@ -27,8 +27,8 @@ const options = {
 
 /********** PART MATERIAL NAMES **********/
 const PART_MATERIALS = {
-  lid: ["Top","Top1_1"], // adjust based on console logs
-  tub: ["Bottom1","Bottom_1"], // can hold multiple names
+  lid: ["Top", "Top1_1"], // adjust based on console logs
+  tub: ["Bottom1", "Bottom_1"], // can hold multiple names
 };
 
 /********** UPDATE MATERIAL COLOR **********/
@@ -79,8 +79,10 @@ function updateMaterialColor(part, color, { skipWait = false } = {}) {
 /********** RENDER OPTIONS **********/
 function renderOptions(part) {
   colorOptions.innerHTML = "";
+  // Set the default color for tub to white
   const savedColor =
-    state.selectedColors[part] || options[part][0].toLowerCase();
+    state.selectedColors[part] ||
+    (part === "tub" ? "white" : options[part][0].toLowerCase());
 
   options[part].forEach((color) => {
     const label = document.createElement("label");
@@ -356,42 +358,48 @@ async function selectModel(index) {
   mainViewer.alt = selectedModel.name;
   mainModelTitle.textContent = selectedModel.name;
 
-  mainViewer.addEventListener("load", async () => {
-    try {
-      // Detect correct pattern material for the model
-      const isRect = isRectangleModel(selectedModel.name);
-      const materialName = isRect ? RECTANGLE_PATTERN_MATERIAL_NAME : PATTERN_MATERIAL_NAME;
+  mainViewer.addEventListener(
+    "load",
+    async () => {
+      try {
+        // Detect correct pattern material for the model
+        const isRect = isRectangleModel(selectedModel.name);
+        const materialName = isRect
+          ? RECTANGLE_PATTERN_MATERIAL_NAME
+          : PATTERN_MATERIAL_NAME;
 
-      // Save material override for future use
-      state.patternMaterialOverride = materialName;
+        // Save material override for future use
+        state.patternMaterialOverride = materialName;
 
-      // Reapply the existing pattern if available
-      if (state.patternUrl) {
-        await applyPatternToAll(state.patternUrl, {
-          forceReload: true,
-          materialOverride: materialName, // switch material correctly
-        });
+        // Reapply the existing pattern if available
+        if (state.patternUrl) {
+          await applyPatternToAll(state.patternUrl, {
+            forceReload: true,
+            materialOverride: materialName, // switch material correctly
+          });
+        }
+
+        // Reapply logo if exists
+        if (state.logoDataUrl) {
+          await tryApplyMaterialTexture(
+            mainViewer,
+            LOGO_MATERIAL_NAME,
+            state.logoDataUrl,
+            { forceReload: true }
+          );
+        }
+
+        // Reapply selected colors
+        for (const [part, color] of Object.entries(state.selectedColors)) {
+          updateMaterialColor(part, color, { skipWait: true });
+        }
+      } catch (err) {
+        console.error("Error applying pattern on model load:", err);
       }
-
-      // Reapply logo if exists
-      if (state.logoDataUrl) {
-        await tryApplyMaterialTexture(mainViewer, LOGO_MATERIAL_NAME, state.logoDataUrl, { forceReload: true });
-      }
-
-      // Reapply selected colors
-      for (const [part, color] of Object.entries(state.selectedColors)) {
-        updateMaterialColor(part, color, { skipWait: true });
-      }
-
-    } catch (err) {
-      console.error("Error applying pattern on model load:", err);
-    }
-  }, { once: true });
+    },
+    { once: true }
+  );
 }
-
-
-
-
 
 /********** FETCH CATEGORIES & PATTERNS **********/
 async function fetchCategories() {
@@ -492,12 +500,12 @@ async function initCategoryAccordion() {
           content.innerHTML = "";
 
           if (patterns.length) {
-            patterns.forEach((p,index) => {
+            patterns.forEach((p, index) => {
               const patternUrl = resolvePatternUrl(p.pattern_url);
               const sw = document.createElement("div");
               sw.className = "pattern-swatch";
               sw.style.backgroundImage = `url('${patternUrl}')`;
-              sw.title = `${p.category_name} - ${index+1}`;
+              sw.title = `${p.category_name} - ${index + 1}`;
               sw.dataset.patternUrl = patternUrl;
 
               sw.addEventListener("click", async () => {
@@ -532,7 +540,8 @@ async function initCategoryAccordion() {
 
             content.dataset.loaded = "true";
             content.style.maxHeight = content.scrollHeight + "px";
-            header.querySelector(".drop").className = "fa-solid fa-angle-up drop";
+            header.querySelector(".drop").className =
+              "fa-solid fa-angle-up drop";
           } else {
             const noPattern = document.createElement("div");
             noPattern.textContent = "No patterns available for this category";
@@ -540,7 +549,8 @@ async function initCategoryAccordion() {
             content.appendChild(noPattern);
             content.dataset.loaded = "true";
             content.style.maxHeight = content.scrollHeight + "px";
-            header.querySelector(".drop").className = "fa-solid fa-angle-up drop";
+            header.querySelector(".drop").className =
+              "fa-solid fa-angle-up drop";
           }
         } else {
           content.style.maxHeight = content.scrollHeight + "px";
@@ -595,15 +605,24 @@ function startPatternCycle(patternUrls = [], interval = 2000) {
 
   state.patternCycleTimer = setInterval(() => {
     const patternUrl = patternUrls[idx % patternUrls.length];
-    if (!patternUrl) { idx++; return; }
+    if (!patternUrl) {
+      idx++;
+      return;
+    }
 
     // apply to all viewers in parallel (skip wait)
-    const viewers = Array.from(new Set([...(state.modelViewers || []), mainViewer].filter(Boolean)));
+    const viewers = Array.from(
+      new Set([...(state.modelViewers || []), mainViewer].filter(Boolean))
+    );
     viewers.forEach((viewer) => {
       if (!viewer.model) return;
       const modelName = (viewer.alt || "").toLowerCase();
-      const materialName = isRectangleModel(modelName) ? RECTANGLE_PATTERN_MATERIAL_NAME : PATTERN_MATERIAL_NAME;
-      tryApplyMaterialTexture(viewer, materialName, patternUrl, { skipWait: true }).catch(() => {});
+      const materialName = isRectangleModel(modelName)
+        ? RECTANGLE_PATTERN_MATERIAL_NAME
+        : PATTERN_MATERIAL_NAME;
+      tryApplyMaterialTexture(viewer, materialName, patternUrl, {
+        skipWait: true,
+      }).catch(() => {});
     });
 
     // efficient swatch update: only touch the previously selected and the new one
@@ -613,16 +632,16 @@ function startPatternCycle(patternUrls = [], interval = 2000) {
       if (sw.dataset.patternUrl?.split("?")[0] === cleanUrl) matched = sw;
     });
 
-    if (lastSelectedEl && lastSelectedEl !== matched) lastSelectedEl.classList.remove("selected");
-    if (matched && !matched.classList.contains("selected")) matched.classList.add("selected");
+    if (lastSelectedEl && lastSelectedEl !== matched)
+      lastSelectedEl.classList.remove("selected");
+    if (matched && !matched.classList.contains("selected"))
+      matched.classList.add("selected");
     lastSelectedEl = matched;
 
     state.patternUrl = cleanUrl;
     idx++;
   }, interval);
 }
-
-
 
 function stopPatternCycle() {
   if (state.patternCycleTimer) {
@@ -638,14 +657,17 @@ function isRectangleModel(name) {
   const lower = name.trim().toLowerCase();
   const keywords = ["rect", "rectangular", "biryani"];
   const result = keywords.some((k) => lower.includes(k));
-  console.log(`[isRectangleModel] "${name}" => ${result ? "✅ RECT" : "❌ ROUND"}`);
+  console.log(
+    `[isRectangleModel] "${name}" => ${result ? "✅ RECT" : "❌ ROUND"}`
+  );
   return result;
 }
 
-
-
 /********** APPLY PATTERN TO ALL VIEWERS **********/
-async function applyPatternToAll(patternUrl, { forceReload = false, materialOverride = null } = {}) {
+async function applyPatternToAll(
+  patternUrl,
+  { forceReload = false, materialOverride = null } = {}
+) {
   if (!patternUrl) return;
 
   const cleanSelectedUrl = patternUrl.split("?")[0];
@@ -657,12 +679,16 @@ async function applyPatternToAll(patternUrl, { forceReload = false, materialOver
     sw.classList.toggle("selected", swatchUrl === cleanSelectedUrl);
   });
 
-  const viewers = Array.from(new Set([...(state.modelViewers || []), mainViewer].filter(Boolean)));
+  const viewers = Array.from(
+    new Set([...(state.modelViewers || []), mainViewer].filter(Boolean))
+  );
 
   await Promise.all(
     viewers.map(async (viewer) => {
       if (!viewer.model) {
-        await new Promise((resolve) => viewer.addEventListener("load", resolve, { once: true }));
+        await new Promise((resolve) =>
+          viewer.addEventListener("load", resolve, { once: true })
+        );
       }
 
       // Always decide material: use override if provided, else detect rectangle
@@ -679,22 +705,13 @@ async function applyPatternToAll(patternUrl, { forceReload = false, materialOver
         mat.pbrMetallicRoughness.baseColorTexture.setTexture(null);
       }
 
-      await tryApplyMaterialTexture(viewer, materialName, patternUrl, { skipWait: true, forceReload });
+      await tryApplyMaterialTexture(viewer, materialName, patternUrl, {
+        skipWait: true,
+        forceReload,
+      });
     })
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 /********** CREATE LOGO CANVAS WITHOUT STRETCH **********/
 function createLogoCanvas(file, canvasSize = 512, logoScale = 0.8) {
@@ -765,7 +782,8 @@ async function tryApplyMaterialTexture(
   }
 
   // Normalize URLs to avoid repeated application
-  const currentUri = mat.pbrMetallicRoughness.baseColorTexture?.texture?.source?.uri;
+  const currentUri =
+    mat.pbrMetallicRoughness.baseColorTexture?.texture?.source?.uri;
   const normalizedCurrent = currentUri ? stripQuery(currentUri) : null;
   const normalizedNew = stripQuery(textureUrl);
 
@@ -797,7 +815,10 @@ async function tryApplyMaterialTexture(
     // Ensure proper transform and wrapping
     if (tex.texture) {
       tex.texture.transform = { offset: [0, 0], scale: [1, 1], rotation: 0 };
-      if (tex.texture.sampler && typeof tex.texture.sampler.setWrapMode === "function") {
+      if (
+        tex.texture.sampler &&
+        typeof tex.texture.sampler.setWrapMode === "function"
+      ) {
         tex.texture.sampler.setWrapMode("CLAMP_TO_EDGE");
       }
     }
@@ -809,9 +830,6 @@ async function tryApplyMaterialTexture(
     console.warn("Failed to apply texture:", err);
   }
 }
-
-
-
 
 /********** LOGO UPLOAD **********/
 if (logoInput) {
@@ -1260,16 +1278,15 @@ if (closeModal) {
       "load",
       async () => {
         if (state.patternUrl) {
-  const isRect = isRectangleModel(mainViewer.alt || "");
-  const matName = isRect ? RECTANGLE_PATTERN_MATERIAL_NAME : PATTERN_MATERIAL_NAME;
+          const isRect = isRectangleModel(mainViewer.alt || "");
+          const matName = isRect
+            ? RECTANGLE_PATTERN_MATERIAL_NAME
+            : PATTERN_MATERIAL_NAME;
 
-  await tryApplyMaterialTexture(
-    mainViewer,
-    matName,
-    state.patternUrl,
-    { forceReload: true }
-  );
-}
+          await tryApplyMaterialTexture(mainViewer, matName, state.patternUrl, {
+            forceReload: true,
+          });
+        }
 
         if (state.logoDataUrl) {
           await tryApplyMaterialTexture(
@@ -1310,7 +1327,6 @@ if (closeModal) {
 
 // Resize canvas on window resize
 window.addEventListener("resize", debounce(resizeCanvas, 150));
-
 
 saveLogoBtn.addEventListener("click", async () => {
   if (!canvas || !baseImageObj) {
